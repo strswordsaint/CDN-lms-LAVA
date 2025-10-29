@@ -52,7 +52,7 @@ Class Io {
 	/**
 	 * Securty instance
 	 *
-	 * @var class
+	 * @var object
 	 */
 	private $security;
 
@@ -85,7 +85,7 @@ Class Io {
 		/**
 		 * Load Security Instance
 		 *
-		 * @var class
+		 * @var object
 		 */
 		$this->security = load_class('Security', 'kernel');
 
