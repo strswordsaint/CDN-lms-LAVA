@@ -1,29 +1,32 @@
-    </main> <!-- Close main container -->
-
-    <footer class="text-center text-sm bg-gradient-to-b from-white to-blue-50 text-blue-700 py-4 mt-10 border-t border-blue-300 shadow-inner">
-        <p class="font-medium">
-            &copy; <?php echo date('Y'); ?> <span class="font-semibold text-blue-800">Colegio de Naujan</span> LMS. All rights reserved.
-        </p>
-
-        <!-- Optional: Display framework info in development -->
-        <?php if(config_item('ENVIRONMENT') === 'development'): ?>
-            <p class="text-xs mt-2 text-blue-500">
-                LavaLust v<?php echo config_item('VERSION'); ?> |
-                Page rendered in {elapsed_time}s |
-                Memory: {memory_usage}
+</div> </main> </div> <?php if (lava_instance()->session->has_userdata('user_id')): ?>
+        <footer class="text-center text-sm bg-white text-gray-600 py-3 border-t border-gray-200" style="height: 50px;">
+            <p class="font-medium">
+                &copy; <?php echo date('Y'); ?> <span class="font-semibold text-cdn-blue">Colegio de Naujan</span> LMS. All rights reserved.
             </p>
-        <?php endif; ?>
-    </footer>
 
-    <!-- jQuery script for flash message fade out -->
+            <?php if(config_item('ENVIRONMENT') === 'development'): ?>
+                <p class="text-xs mt-1 text-gray-400">
+                    LavaLust v<?php echo config_item('VERSION'); ?> |
+                    Page rendered in {elapsed_time}s |
+                    Memory: {memory_usage}
+                </p>
+            <?php endif; ?>
+        </footer>
+    <?php endif; ?>
     <script>
         $(document).ready(function() {
-            // Fade out notices after 5 seconds
+            // Flash message fade out
             $('.notice[style*="display:block"]').each(function() {
                 var notice = $(this);
                 setTimeout(function() {
                     notice.fadeOut('slow');
                 }, 5000);
+            });
+
+            // === NEW: Sidebar Toggle Script ===
+            $('#sidebar-toggle').on('click', function() {
+                // Toggle the 'collapsed' class on the sidebar
+                $('#app-sidebar').toggleClass('collapsed');
             });
         });
     </script>

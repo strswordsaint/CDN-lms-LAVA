@@ -51,6 +51,13 @@ $router->post('/auth/process_login', 'AuthController::process_login');
 $router->post('/auth/process_register', 'AuthController::process_register');
 $router->get('/auth/logout', 'AuthController::logout')->name('logout');
 
+// Google OAuth Routes
+$router->get('/auth/google_login', 'AuthController::google_login')->name('google.login');
+$router->get('/auth/google_callback', 'AuthController::google_callback'); // Google redirects here
+// Add these near your other auth routes
+$router->get('/auth/choose_role', 'AuthController::choose_role');
+$router->post('/auth/complete_google_register', 'AuthController::complete_google_register');
+
 // --- Dashboards (Works) ---
 $router->get('/dashboard', 'DashboardController::index')->name('dashboard');
 
@@ -84,6 +91,9 @@ $router->get('/assignments/edit/{assign_id}', 'AssignmentController::edit')->whe
 $router->post('/assignments/update/{assign_id}', 'AssignmentController::update')->where_number('assign_id');
 $router->post('/assignments/delete/{assign_id}', 'AssignmentController::delete')->where_number('assign_id');
 $router->get('/assignments/{assign_id}/submissions', 'AssignmentController::view_submissions')->where_number('assign_id');
+// --- Assignment Grading (NEW) ---
+$router->get('/submissions/{sub_id}/grade', 'AssignmentController::show_grade_form')->where_number('sub_id');
+$router->post('/submissions/{sub_id}/grade', 'AssignmentController::process_grade')->where_number('sub_id');
 
 // --- Quiz Management (NEW) ---
 $router->get('/courses/{id}/quizzes/create', 'QuizController::create')->where_number('id');
@@ -122,9 +132,11 @@ $router->get('/my-courses/{id}', 'StudentController::view_course')->where_number
 // View assignments for that course
 $router->get('/my-courses/{id}/assignments', 'StudentController::view_assignments')->where_number('id');
 // View a single assignment (and submit)
+// View a single assignment (and submit)
 $router->get('/assignment/{assign_id}', 'StudentController::view_assignment')->where_number('assign_id');
 $router->post('/assignment/{assign_id}/submit', 'StudentController::submit_assignment')->where_number('assign_id');
-
+// view assignments list
+$router->get('/my-assignments', 'StudentController::view_all_assignments')->name('student.assignments');
 // --- Student Quiz Taking (NEW) ---
 $router->get('/my-courses/{id}/quizzes', 'StudentController::view_quizzes')->where_number('id');
 $router->get('/quiz/{quiz_id}/take', 'StudentController::take_quiz')->where_number('quiz_id');

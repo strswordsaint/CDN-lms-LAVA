@@ -56,6 +56,22 @@ class Course_Model extends Model {
         return $this->filter($conditions)->get();
     }
 
+    public function get_courses_with_stats_by_teacher($teacher_id) {
+        $sql = "
+            SELECT 
+                c.*, 
+                (SELECT COUNT(*) FROM enrollments e 
+                 WHERE e.course_id = c.course_id AND e.status = 'approved') as student_count
+            FROM 
+                {$this->table} c
+            WHERE 
+                c.teacher_id = ?
+            ORDER BY
+                c.created_at DESC
+        ";
+        return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // You can add update_course and delete_course methods here later,
     // potentially using $this->update() and $this->delete() from the base Model.
 }

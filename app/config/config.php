@@ -128,7 +128,7 @@ $config['log_dir']                  = 'runtime/logs/';
 | Note: This will NOT disable or override the LavaLust-specific
 |	autoloading (app/config/autoload.php)
 */
-$config['composer_autoload']        = FALSE;
+$config['composer_autoload']        = ROOT_DIR . 'vendor/autoload.php'; //set to true for google oauth
 
 /*
 |--------------------------------------------------------------------------
@@ -217,7 +217,7 @@ $config['sess_cookie_name']        = 'LLSession';
 $config['sess_expiration']         = 7200;
 $config['sess_save_path']          = '';
 $config['sess_match_ip']           = TRUE;
-$config['sess_match_fingerprint']  = TRUE;
+$config['sess_match_fingerprint']  = FALSE;
 $config['sess_time_to_update']     = 300;
 $config['sess_regenerate_destroy'] = TRUE;
 $config['sess_expire_on_close']    = FALSE;
@@ -307,4 +307,12 @@ $config['csrf_token_name']         = 'csrf_test_name';
 $config['csrf_cookie_name']        = 'csrf_cookie_name';
 $config['csrf_expire']             = 7200;
 $config['csrf_regenerate']         = FALSE;
-?>
+
+
+// Load Google API secrets from an untracked file
+if (file_exists(APP_DIR . 'config/google_secrets.php')) {
+    include(APP_DIR . 'config/google_secrets.php');
+}
+
+// Google redirect URI
+$config['google_redirect_uri']  = $config['base_url'] . config_item('index_page') . '/auth/google_callback';

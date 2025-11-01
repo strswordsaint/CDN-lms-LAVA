@@ -6,6 +6,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
  * * Automatically generated via CLI.
  */
 class DashboardController extends Controller {
+    
     public function __construct()
     {
         parent::__construct();
@@ -13,10 +14,11 @@ class DashboardController extends Controller {
         $this->call->library('session');
         $this->call->helper('url');
         
-        // --- ADD THIS LINE ---
-        // Load the model so the view can access it
+        // Load all models we'll need for the dashboards
         $this->call->model('Enrollment_Model');
-        // --- END ADD ---
+        $this->call->model('Course_Model');
+        $this->call->model('Assignment_Model');
+        $this->call->model('Assignment_Submission_Model');
 
         $this->check_auth();
     }
@@ -41,19 +43,53 @@ class DashboardController extends Controller {
 
         switch ($role) {
             case 'admin':
-                // Use direct call->view()
                 $this->call->view('/dashboards/admin', $data);
                 break;
+            
             case 'teacher':
-                 // Use direct call->view()
+                $teacher_id = $this->session->userdata('user_id');
+                $courses_with_stats = $this->Course_Model->get_courses_with_stats_by_teacher($teacher_id);
+                $ungraded_count = $this->Assignment_Submission_Model->count_ungraded_for_teacher($teacher_id);
+                $recent_assignments = $this->Assignment_Model->get_recent_assignments_for_teacher($teacher_id, 5);
+                $total_students = array_sum(array_column($courses_with_stats, 'student_count'));
+
+                $data['courses_list'] = $courses_with_stats;
+                $data['stats'] = [
+                    'course_count' => count($courses_with_stats),
+                    'student_count' => $total_students,
+                    'ungraded_count' => $ungraded_count
+                ];
+                $data['recent_assignments'] = $recent_assignments;
+                
                 $this->call->view('/dashboards/teacher', $data);
                 break;
+
             case 'student':
             default:
-                 // The Enrollment_Model is now loaded,
-                 // so the view 'dashboards/student' will work.
+                // === NEW LOGIC FOR STUDENT DASHBOARD ===
+                $student_id = $this->session->userdata('user_id');
+
+                // 1. Get courses (for count)
+                $courses = $this->Enrollment_Model->get_student_courses($student_id, 'approved');
+                
+                // 2. Get pending assignments count
+                $pending_count = $this->Assignment_Model->count_pending_for_student($student_id);
+
+                // 3. Get upcoming assignments
+                $upcoming = $this->Assignment_Model->get_upcoming_for_student($student_id, 5);
+
+                // Add to data array
+                $data['stats'] = [
+                    'joined_courses' => count($courses),
+                    'pending_assignments' => $pending_count,
+                    // You can add more stats here, e.g., 'completed_assignments'
+                ];
+                $data['upcoming_assignments'] = $upcoming;
+
                 $this->call->view('/dashboards/student', $data);
+                // === END NEW LOGIC ===
                 break;
         }
     }
 }
+?>

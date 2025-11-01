@@ -3,8 +3,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 /**
  * Controller: CourseController
- * 
- * Automatically generated via CLI.
+ * * Automatically generated via CLI.
  */
 class CourseController extends Controller {
     public function __construct()
@@ -12,14 +11,18 @@ class CourseController extends Controller {
         parent::__construct();
          $this->call->database(); // Ensure DB is available
 
-        // Load the new Course_Model
+        // Load the models
         $this->call->model('Course_Model');
         $this->call->model('Enrollment_Model');
+        // --- ADD THIS LINE ---
+        $this->call->model('Assignment_Model');
+        // --- END ADD ---
+
         // Middleware: Check if user is logged in for all course actions
         $this->check_auth();
     }
 
-      // Middleware to check authentication and role
+     // Middleware to check authentication and role
     protected function check_auth($role_required = ['teacher', 'admin']) {
         $session = lava_instance()->session; // Use instance for clarity
         if (!$session->has_userdata('user_id')) {
@@ -63,6 +66,8 @@ class CourseController extends Controller {
         }
 
         $data['course'] = $course;
+        // Fetch assignments - THIS LINE WILL NOW WORK
+        $data['assignments'] = $this->Assignment_Model->get_assignments_by_course($course_id);
         $data['page_title'] = 'Manage Course: ' . htmlspecialchars($course['title']);
         $this->call->view('/courses/ShowCourse', $data); // Use the new view name
     }
@@ -81,22 +86,19 @@ class CourseController extends Controller {
     /**
      * Process the form submission for creating a new course. (CREATE action)
      */
-    /**
- * Process the form submission for creating a new course. (CREATE action)
- */
-public function store() {
-    $form_validation = lava_instance()->form_validation; // Use instance for clarity
-    $session = lava_instance()->session;
-    $io = lava_instance()->io;
+    public function store() {
+        $form_validation = lava_instance()->form_validation; // Use instance for clarity
+        $session = lava_instance()->session;
+        $io = lava_instance()->io;
 
-    // Run validation
-    $form_validation
-        ->name('title')
-            ->required('Course title is required.')
-            ->min_length(3, 'Title must be at least 3 characters.')
-            ->max_length(255, 'Title cannot exceed 255 characters.')
+        // Run validation
+        $form_validation
+            ->name('title')
+                ->required('Course title is required.')
+                ->min_length(3, 'Title must be at least 3 characters.')
+                ->max_length(255, 'Title cannot exceed 255 characters.')
             ->name('description')
-            ->max_length(5000, 'Description is too long.');
+                ->max_length(5000, 'Description is too long.');
 
         if ($form_validation->run() == FALSE) {
             $session->set_flashdata('validation_errors', $form_validation->get_errors());
@@ -107,12 +109,10 @@ public function store() {
 
             // Build the data array (This is the original, correct way)
             $data = [
-            'title'       => $io->post('title'),
-            'description' => $io->post('description'),
-            'teacher_id'  => $teacher_id,
-
-            // --- ADD THIS LINE ---
-            'enrollment_code' => $this->_generate_enrollment_code()
+                'title'       => $io->post('title'),
+                'description' => $io->post('description'),
+                'teacher_id'  => $teacher_id,
+                'enrollment_code' => $this->_generate_enrollment_code()
             ];
 
             // Insert using the model
@@ -194,15 +194,8 @@ public function store() {
                 $session->set_flashdata('success', 'Course updated successfully!');
                 redirect('/courses'); // Redirect to the course list
             } else {
-                // $updated might be 0 if no rows were changed, which isn't strictly an error.
-                // It might be better to redirect with success even if no data changed.
-                // However, if the update *fails*, it usually throws a database exception.
-                // We'll redirect with success for now, assuming no change isn't an error.
                 $session->set_flashdata('success', 'Course details saved (no changes detected).');
                  redirect('/courses');
-                // Alternatively, handle potential false return from update() as error:
-                // $session->set_flashdata('error', 'Failed to update course. Please try again.');
-                // redirect('/courses/edit/' . $course_id);
             }
         }
     }
@@ -247,8 +240,7 @@ public function store() {
             return;
         }
 
-        // Load the Enrollment model if not already loaded (best practice to load in constructor)
-        $this->call->model('Enrollment_Model');
+        // $this->call->model('Enrollment_Model'); // Already loaded
 
         $data['course'] = $course;
         $data['page_title'] = 'Manage Enrollments for: ' . htmlspecialchars($course['title']);
@@ -257,23 +249,20 @@ public function store() {
         $data['success_message'] = $this->session->flashdata('success');
         $data['error_message'] = $this->session->flashdata('error');
 
-        // Create a new view file for this
         $this->call->view('/courses/manage_enrollments', $data);
     }
 
     /**
      * Approve a pending enrollment request.
-     * Corresponds to route: $router->post('/enrollments/approve/{enrollment_id}', ...)
      */
     public function approve_enrollment($enrollment_id) {
         $teacher_id = $this->session->userdata('user_id');
-        $this->call->model('Enrollment_Model');
+        // $this->call->model('Enrollment_Model'); // Already loaded
         
-        // Security Check: Verify the teacher owns the course associated with this enrollment
-        $enrollment = $this->Enrollment_Model->find($enrollment_id); // Get enrollment details
+        $enrollment = $this->Enrollment_Model->find($enrollment_id);
         if (!$enrollment) {
              $this->session->set_flashdata('error', 'Enrollment request not found.');
-             redirect($_SERVER['HTTP_REFERER'] ?? '/courses'); // Redirect back
+             redirect($_SERVER['HTTP_REFERER'] ?? '/courses');
              return;
         }
 
@@ -284,7 +273,6 @@ public function store() {
              return;
         }
         
-        // Proceed with approval
         if ($this->Enrollment_Model->update_enrollment_status($enrollment_id, 'approved')) {
             $this->session->set_flashdata('success', 'Enrollment approved successfully.');
         } else {
@@ -296,13 +284,11 @@ public function store() {
 
     /**
      * Reject a pending enrollment request.
-     * Corresponds to route: $router->post('/enrollments/reject/{enrollment_id}', ...)
      */
     public function reject_enrollment($enrollment_id) {
         $teacher_id = $this->session->userdata('user_id');
-        $this->call->model('Enrollment_Model');
+        // $this->call->model('Enrollment_Model'); // Already loaded
 
-        // Security Check (similar to approve)
         $enrollment = $this->Enrollment_Model->find($enrollment_id);
         if (!$enrollment) {
              $this->session->set_flashdata('error', 'Enrollment request not found.');
@@ -317,8 +303,6 @@ public function store() {
              return;
         }
 
-        // Proceed with rejection (update status to 'rejected')
-        // Or you could delete the row: $this->Enrollment_Model->delete($enrollment_id)
         if ($this->Enrollment_Model->update_enrollment_status($enrollment_id, 'rejected')) {
              $this->session->set_flashdata('success', 'Enrollment rejected.');
         } else {
@@ -330,25 +314,19 @@ public function store() {
 
     /**
     * Private helper function to generate a unique enrollment code.
-    * It will keep trying until it finds a code not already in the database.
     */
     private function _generate_enrollment_code($length = 6) {
         $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         $code = '';
-
-        // Loop until we find a code that is truly unique
         do {
             $code = '';
             for ($i = 0; $i < $length; $i++) {
                 $code .= $characters[rand(0, strlen($characters) - 1)];
             }
-
-            // Check the database to see if the code already exists
             $exists = $this->Course_Model->filter(['enrollment_code' => $code])->get();
-
-        } while ($exists); // If it exists, the loop will run again
-
+        } while ($exists);
         return $code;
     }
     
 }
+?>

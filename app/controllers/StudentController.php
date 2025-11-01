@@ -11,7 +11,10 @@ class StudentController extends Controller {
         
         // Load the models we will need
         $this->call->model('Enrollment_Model');
-        $this->call->model('Course_Model');
+        $this->call->model('Course_Model'); // For finding the course
+        
+        // --- NEW: Load the Assignment Model ---
+        $this->call->model('Assignment_Model'); 
         
         // Protect this entire controller
         $this->check_auth();
@@ -35,8 +38,23 @@ class StudentController extends Controller {
     }
     
     /**
+     * Display the student's list of enrolled/pending courses.
+     * Corresponds to route: $router->get('/courses/my', 'StudentController::my_courses');
+     */
+    public function my_courses() {
+        $student_id = $this->session->userdata('user_id');
+        
+        // Use the model to get all courses (pending and approved)
+        $data['my_courses'] = $this->Enrollment_Model->get_student_courses($student_id);
+        $data['page_title'] = 'My Courses';
+        
+        // Create this view file next if it doesn't exist
+        $this->call->view('/student/my_courses', $data); 
+    }
+
+    /**
      * Handles the POST request from the enrollment form.
-     * Now inserts with 'pending' status.
+     * Corresponds to route: $router->post('/courses/enroll', 'StudentController::enroll');
      */
     public function enroll() {
         $enrollment_code = $this->io->post('enrollment_code');
@@ -48,6 +66,7 @@ class StudentController extends Controller {
             return;
         }
 
+        // 1. Find the course by its enrollment code
         $course = $this->Course_Model->filter(['enrollment_code' => $enrollment_code])->get();
 
         if (!$course) {
@@ -56,16 +75,16 @@ class StudentController extends Controller {
             return;
         }
         
-        // Use the new check: Is there already a pending or approved enrollment?
-        $already_requested_or_enrolled = $this->Enrollment_Model->has_pending_or_approved_enrollment($student_id, $course['course_id']);
+        // 2. Check if student has already requested or is enrolled
+        $is_enrolled = $this->Enrollment_Model->has_pending_or_approved_enrollment($student_id, $course['course_id']);
 
-        if ($already_requested_or_enrolled) {
-            $this->session->set_flashdata('error', 'You have already requested or are enrolled in this course.');
+        if ($is_enrolled) {
+            $this->session->set_flashdata('error', 'You have already requested or are enrolled in that course.');
             redirect('/dashboard');
             return;
         }
         
-        // Create the enrollment request with 'pending' status
+        // 3. Enroll the student (with 'pending' status)
         $data = [
             'student_id' => $student_id,
             'course_id'  => $course['course_id'],
@@ -73,86 +92,209 @@ class StudentController extends Controller {
         ];
         
         if ($this->Enrollment_Model->insert($data)) {
-            $this->session->set_flashdata('success', 'Enrollment requested for: ' . $course['title'] . '. Waiting for teacher approval.');
+            $this->session->set_flashdata('success', 'Enrollment request sent for: ' . $course['title']);
         } else {
-            $this->session->set_flashdata('error', 'An error occurred submitting your request. Please try again.');
+            $this->session->set_flashdata('error', 'An error occurred during enrollment. Please try again.');
         }
         
         redirect('/dashboard');
     }
 
     /**
-     * Display the student's enrolled (and pending) courses.
-     * Corresponds to route: $router->get('/courses/my', 'StudentController::my_courses');
+     * View a single course (assignments, quizzes, etc.)
+     * Corresponds to route: $router->get('/my-courses/{id}', 'StudentController::view_course');
      */
-     public function my_courses() {
-         $student_id = $this->session->userdata('user_id');
-         
-         // Use the Enrollment_Model to get courses with status
-         $data['courses'] = $this->Enrollment_Model->get_student_courses($student_id); 
-         $data['page_title'] = 'My Courses';
-         $data['success_message'] = $this->session->flashdata('success');
-         $data['error_message'] = $this->session->flashdata('error');
+    public function view_course($course_id) {
+        $student_id = $this->session->userdata('user_id');
+        
+        // 1. Check if student is *approved* for this course
+        $is_approved = $this->Enrollment_Model->filter([
+            'student_id' => $student_id,
+            'course_id'  => $course_id,
+            'status'     => 'approved'
+        ])->get();
 
-         // Load the view from the new 'student' folder
-         $this->call->view('student/my_courses', $data); 
-     }
+        if (!$is_approved) {
+            $this->session->set_flashdata('error', 'You do not have access to this course.');
+            redirect('/dashboard');
+            return;
+        }
 
-     /**
-      * Display details of a single course IF enrollment is approved.
-      * Corresponds to route: $router->get('/my-courses/{id}', 'StudentController::view_course');
-      */
-     public function view_course($course_id) {
-         $student_id = $this->session->userdata('user_id');
+        // 2. Get course details
+        $data['course'] = $this->Course_Model->find($course_id);
+        
+        // --- NEW: Get all assignments for this course ---
+        $data['assignments'] = $this->Assignment_Model
+                                    ->filter(['course_id' => $course_id])
+                                    ->order_by('due_date', 'ASC')
+                                    ->get_all();
+        
+        $data['page_title'] = $data['course']['title'];
+        
+        // --- NEW: We will check submission status later ---
+        // For now, we just pass the assignments to the view
+        
+        $this->call->view('/student/view_course', $data);
+    }
+    
+    public function view_assignment($assignment_id) {
+        $student_id = $this->session->userdata('user_id');
 
-         // Check if student has APPROVED enrollment for this course
-         $enrollment = $this->Enrollment_Model->filter([
-             'student_id' => $student_id,
-             'course_id' => $course_id,
-             'status' => 'approved'
-         ])->get();
+        // 1. Get assignment details
+        $assignment = $this->Assignment_Model->find($assignment_id); // Find using primary key
+        if (!$assignment) {
+            $this->session->set_flashdata('error', 'Assignment not found.');
+            redirect('/dashboard'); // Or maybe back to the course page?
+            return;
+        }
 
-         if (!$enrollment) {
-             $this->session->set_flashdata('error', 'You do not have approved access to this course.');
-             redirect('/courses/my'); // Redirect to their course list
+        // 2. Security Check: Is the student enrolled and approved for this assignment's course?
+        $is_approved = $this->Enrollment_Model->filter([
+            'student_id' => $student_id,
+            'course_id'  => $assignment['course_id'],
+            'status'     => 'approved'
+        ])->get();
+
+        if (!$is_approved) {
+            $this->session->set_flashdata('error', 'You do not have access to this assignment.');
+            redirect('/dashboard');
+            return;
+        }
+        
+        // 3. Get course details (for navigation/context)
+        $data['course'] = $this->Course_Model->find($assignment['course_id']);
+        
+        // 4. Check if the student has already submitted
+        $this->call->model('Assignment_Submission_Model'); // Load the submission model
+        $data['submission'] = $this->Assignment_Submission_Model->check_existing_submission($student_id, $assignment_id);
+
+        $data['assignment'] = $assignment;
+        $data['page_title'] = 'Submit: ' . htmlspecialchars($assignment['title']);
+        $data['error_message'] = $this->session->flashdata('error'); // For upload errors
+
+        // We will create this view file next
+        $this->call->view('/student/submit_assignment', $data);
+    }
+
+    /**
+     * Handle the file upload for an assignment submission.
+     * Corresponds to route: POST /assignment/{assign_id}/submit
+     */
+   public function submit_assignment($assignment_id) {
+        $student_id = $this->session->userdata('user_id');
+
+        // 1. Get assignment details (needed for validation and saving)
+        $assignment = $this->Assignment_Model->find($assignment_id);
+        if (!$assignment) {
+            $this->session->set_flashdata('error', 'Assignment not found.');
+            redirect('/dashboard');
+            return;
+        }
+
+        // 2. Security Check: Is student approved for this course?
+        $is_approved = $this->Enrollment_Model->filter([
+            'student_id' => $student_id,
+            'course_id'  => $assignment['course_id'],
+            'status'     => 'approved'
+        ])->get();
+        if (!$is_approved) {
+            $this->session->set_flashdata('error', 'You do not have permission to submit to this assignment.');
+            redirect('/dashboard');
+            return;
+        }
+        
+        // 3. Check if already submitted
+        $this->call->model('Assignment_Submission_Model');
+        $existing_submission = $this->Assignment_Submission_Model->check_existing_submission($student_id, $assignment_id);
+        if ($existing_submission) {
+             $this->session->set_flashdata('error', 'You have already submitted this assignment.');
+             redirect('/assignment/' . $assignment_id); // Redirect back to the assignment page
              return;
-         }
+        }
 
-         // If approved, get course details
-         $course = $this->Course_Model->find($course_id);
+        // 4. Handle File Upload
+        if (!isset($_FILES['submission_file']) || $_FILES['submission_file']['error'] != UPLOAD_ERR_OK) {
+            $this->session->set_flashdata('error', 'File upload failed or no file selected. Please try again.');
+            redirect('/assignment/' . $assignment_id);
+            return;
+        }
 
-         if (!$course) {
-             $this->session->set_flashdata('error', 'Course not found.');
-             redirect('/courses/my');
-             return;
-         }
+        // Use the Upload library (make sure it's loaded, e.g., in BaseController or here)
+        $this->call->library('Upload', $_FILES['submission_file']); // Pass file info
 
-         $data['course'] = $course;
-         $data['page_title'] = 'Course: ' . htmlspecialchars($course['title']);
-         
-         // Placeholders for future features
-         $data['assignments'] = []; 
-         $data['quizzes'] = []; 
-         $data['discussions'] = []; 
-         $data['resources'] = []; 
+        // Define upload directory (relative to index.php)
+        $upload_dir = 'uploads/assignments/submissions/' . $assignment['course_id'] . '/' . $assignment_id;
+        
+        // Create the directory if it doesn't exist (course_id/assignment_id structure)
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
 
-         // Load the view from the new 'student' folder
-         $this->call->view('/student/view_course', $data);
-     }
+        $this->Upload->set_dir($upload_dir);
+        // Allow common document/image/archive types
+        $this->Upload->allowed_extensions(array('pdf', 'docx', 'doc', 'txt', 'jpg', 'png', 'zip', 'ppt', 'pptx')); 
+        $this->Upload->allowed_mimes(array(
+            'application/pdf', 
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+            'application/msword', // doc
+            'text/plain', 
+            'image/jpeg', 
+            'image/png', 
+            'application/zip', 
+            'application/vnd.ms-powerpoint', // ppt
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' //pptx
+        )); 
+        
+        // --- THIS IS THE FIX ---
+        // Let the library handle unique filenames
+        $this->Upload->encrypt_name(); 
+        
+        // Remove the manual filename generation and the call to set_filename()
+        // $original_name = pathinfo($_FILES['submission_file']['name'], PATHINFO_FILENAME);
+        // $extension = pathinfo($_FILES['submission_file']['name'], PATHINFO_EXTENSION);
+        // $new_filename = $student_id . '_' . time() . '_' . preg_replace("/[^a-zA-Z0-9_.]/", "_", $original_name) . '.' . $extension;
+        // $this->Upload->set_filename($new_filename); // REMOVED THIS LINE
+        // --- END FIX ---
 
-    // --- Placeholder methods for future features ---
-    public function browse_courses() { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Browsing all courses is not yet implemented.']); }
-    public function view_assignments($course_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Viewing assignments is not yet implemented.']);}
-    public function view_assignment($assign_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Viewing single assignment is not yet implemented.']);}
-    public function submit_assignment($assign_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Submitting assignment is not yet implemented.']);}
-    public function view_quizzes($course_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Viewing quizzes is not yet implemented.']);}
-    public function take_quiz($quiz_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Taking quiz is not yet implemented.']);}
-    public function submit_quiz($quiz_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Submitting quiz is not yet implemented.']);}
-    public function view_quiz_results($quiz_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Viewing quiz results is not yet implemented.']);}
-    public function view_discussions($course_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Viewing discussions is not yet implemented.']);}
-    public function view_discussion($disc_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Viewing single discussion is not yet implemented.']);}
-    public function post_reply($disc_id) { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Posting reply is not yet implemented.']);}
-    public function view_grades() { $this->call->view('errors/error_general', ['heading' => 'Not Implemented', 'message'=>'Viewing grades is not yet implemented.']);}
 
+        if ($this->Upload->do_upload()) {
+            $uploaded_filename = $this->Upload->get_filename();
+            $file_path = $upload_dir . '/' . $uploaded_filename;
+
+            // 5. Save submission record to database
+            $submission_data = [
+                'assignment_id' => $assignment_id,
+                'student_id'    => $student_id,
+                'file_path'     => $file_path
+            ];
+
+            if ($this->Assignment_Submission_Model->insert($submission_data)) {
+                $this->session->set_flashdata('success', 'Assignment submitted successfully!');
+                // Redirect back to the main course page after successful submission
+                redirect('/my-courses/' . $assignment['course_id']); 
+            } else {
+                // Database insert failed, delete uploaded file
+                @unlink($file_path); 
+                $this->session->set_flashdata('error', 'Database error: Could not save submission.');
+                redirect('/assignment/' . $assignment_id);
+            }
+        } else {
+            // Upload failed
+            $this->session->set_flashdata('error', 'File upload failed: ' . $this->Upload->get_errors()[0]);
+            redirect('/assignment/' . $assignment_id);
+        }
+    }
+    public function view_all_assignments() {
+        $student_id = $this->session->userdata('user_id');
+        
+        // 1. Get all assignments using the new model function
+        $data['assignments'] = $this->Assignment_Model->get_all_assignments_for_student($student_id);
+        
+        $data['page_title'] = 'All Assignments';
+        
+        // 2. We will create this new view file next
+        $this->call->view('/student/all_assignments', $data);
+    }
+    
 }
 ?>

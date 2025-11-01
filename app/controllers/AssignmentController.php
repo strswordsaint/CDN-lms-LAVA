@@ -8,15 +8,14 @@ class AssignmentController extends Controller {
         $this->call->database();
         $this->call->model('Assignment_Model');
         $this->call->model('Course_Model'); // For checking course ownership
+        // --- ADDED: Load Submission Model ---
+        $this->call->model('Assignment_Submission_Model'); 
+        // --- END ADD ---
         $this->call->library('session');
         $this->call->library('form_validation');
-        
-        // --- THIS IS THE FIX ---
-        // Load the Upload library and URL helper so they are always available
-        $this->call->library('Upload');
+        $this->call->library('Upload'); // Load Upload library
         $this->call->helper('url');
-        // --- END FIX ---
-        
+
         // Protect all teacher-facing assignment methods
         $this->check_auth();
     }
@@ -56,7 +55,7 @@ class AssignmentController extends Controller {
         $data['validation_errors'] = $this->session->flashdata('validation_errors');
         $data['error_message'] = $this->session->flashdata('error'); // For file upload errors
 
-        $this->call->view('/assignments/create', $data);
+        $this->call->view('assignments/create', $data);
     }
 
     /**
@@ -92,75 +91,174 @@ class AssignmentController extends Controller {
             'attachment_path' => null // Default to null
         ];
 
-        // --- Handle File Upload ---
+        // Handle File Upload
         $file_uploaded = false;
-        // Check if a file was actually uploaded without errors
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] == UPLOAD_ERR_OK) {
             
-            // We must pass the $_FILES array to the library's public property
-            // --- FIX: Use $this->Upload (Uppercase U) ---
             $this->Upload->file = $_FILES['attachment'];
-            
             $upload_dir = 'uploads/assignments/materials';
-            
-            // Create the directory if it doesn't exist
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, 0755, true);
-            }
+            if (!is_dir($upload_dir)) { mkdir($upload_dir, 0755, true); }
 
-            // --- FIX: Use $this->Upload (Uppercase U) and add mime types ---
             $this->Upload->set_dir($upload_dir);
             $this->Upload->allowed_extensions(array('pdf', 'docx', 'doc', 'pptx', 'txt', 'jpg', 'png', 'zip', 'mp4', 'mov', 'wmv'));
-            
-            // Add corresponding MIME types to fix the "invalid mime type" error
-            $this->Upload->allowed_mimes(array(
-                'application/pdf', 
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-                'application/msword', // .doc
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
-                'text/plain', // .txt
-                'image/jpeg', // .jpg
-                'image/png', // .png
-                'application/zip', // .zip
-                'video/mp4', // .mp4
-                'video/quicktime', // .mov
-                'video/x-ms-wmv' // .wmv
-            ));
-            
-            $this->Upload->encrypt_name(); // Secure filename
+            $this->Upload->allowed_mimes(array('application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'text/plain', 'image/jpeg', 'image/png', 'application/zip', 'video/mp4', 'video/quicktime', 'video/x-ms-wmv'));
+            $this->Upload->encrypt_name(); 
 
-            // --- FIX: Use $this->Upload (Uppercase U) ---
             if ($this->Upload->do_upload()) {
-                // --- FIX: Use $this->Upload (Uppercase U) ---
                 $filename = $this->Upload->get_filename();
-                // Store the *relative* path for database
                 $data['attachment_path'] = $upload_dir . '/' . $filename;
                 $file_uploaded = true;
             } else {
-                // If upload fails, show error and return
-                // --- FIX: Use $this->Upload (Uppercase U) ---
                 $this->session->set_flashdata('error', $this->Upload->get_errors()[0]);
                 redirect('/courses/' . $course_id . '/assignments/create');
                 return;
             }
         }
-        // --- End File Upload ---
 
         // Insert into database
         if ($this->Assignment_Model->insert($data)) {
             $this->session->set_flashdata('success', 'Assignment created successfully.');
             redirect('/courses/show/' . $course_id);
         } else {
-            // This might happen if the database insert fails for some reason
-            if($file_uploaded && isset($data['attachment_path'])) {
-                // Clean up the uploaded file if DB insert fails
-                @unlink($data['attachment_path']);
-            }
+            if($file_uploaded && isset($data['attachment_path'])) { @unlink($data['attachment_path']); }
             $this->session->set_flashdata('error', 'Failed to create assignment in database.');
             redirect('/courses/' . $course_id . '/assignments/create');
         }
     }
     
-    // We will add edit, update, delete, and view_submissions methods here later...
+    // --- NEW METHOD: View Submissions ---
+    /**
+     * Display the list of submissions for a specific assignment.
+     * Corresponds to route: GET /assignments/{assign_id}/submissions
+     */
+    public function view_submissions($assignment_id) {
+        $teacher_id = $this->session->userdata('user_id');
+
+        // 1. Get assignment details AND verify teacher ownership via course
+        // Note: Using the find_with_course_check method we added to Assignment_Model
+        $assignment = $this->Assignment_Model->find_with_course_check($assignment_id, $teacher_id); 
+        if (!$assignment) {
+            $this->session->set_flashdata('error', 'Assignment not found or you do not have permission.');
+            redirect('/courses'); // Redirect back to course list
+            return;
+        }
+
+        // 2. Get all submissions for this assignment 
+        // (Assignment_Submission_Model was loaded in constructor)
+        $data['submissions'] = $this->Assignment_Submission_Model->get_submissions_for_assignment($assignment_id);
+
+        $data['assignment'] = $assignment;
+        $data['page_title'] = 'Submissions for: ' . htmlspecialchars($assignment['title']);
+        $data['course_id'] = $assignment['course_id']; // Pass course ID for back button
+
+        // Load the view file (which already exists)
+        $this->call->view('/assignments/submissions', $data);
+    }
+    // --- END NEW METHOD ---
+
+
+    // --- NEW METHOD: Show Grade Form ---
+     /**
+     * Show the form/page for grading a specific submission.
+     * Corresponds to route: GET /submissions/{sub_id}/grade
+     */
+    public function show_grade_form($submission_id) {
+        $teacher_id = $this->session->userdata('user_id');
+
+        // 1. Get submission details (includes student, assignment, course info)
+        $submission = $this->Assignment_Submission_Model->get_submission_details($submission_id);
+
+        if (!$submission) {
+            $this->session->set_flashdata('error', 'Submission not found.');
+            redirect('/courses'); 
+            return;
+        }
+
+        // 2. Security Check: Does the current teacher own the course?
+        $course = $this->Course_Model->find_course($submission['course_id'], $teacher_id);
+        if (!$course) {
+             $this->session->set_flashdata('error', 'You do not have permission to grade this submission.');
+             redirect('/courses');
+             return;
+        }
+
+        $data['submission'] = $submission;
+        $data['page_title'] = 'Grade Submission: ' . htmlspecialchars($submission['assignment_title']);
+        $data['validation_errors'] = $this->session->flashdata('validation_errors');
+
+        // Load the view (which already exists)
+        $this->call->view('/assignments/grade_submission', $data);
+    }
+    // --- END NEW METHOD ---
+
+
+    // --- NEW METHOD: Process Grade ---
+    /**
+     * Process the submitted grade and feedback.
+     * Corresponds to route: POST /submissions/{sub_id}/grade
+     */
+    public function process_grade($submission_id) {
+        $teacher_id = $this->session->userdata('user_id');
+
+        // 1. Get submission details (for security check and context)
+        $submission = $this->Assignment_Submission_Model->get_submission_details($submission_id);
+        if (!$submission) {
+            $this->session->set_flashdata('error', 'Submission not found.');
+            redirect('/courses');
+            return;
+        }
+
+        // 2. Security Check: Teacher ownership
+        $course = $this->Course_Model->find_course($submission['course_id'], $teacher_id);
+        if (!$course) {
+             $this->session->set_flashdata('error', 'Permission denied.');
+             redirect('/courses');
+             return;
+        }
+
+        // 3. Validation
+        $this->form_validation
+            ->name('grade')
+                ->required('Grade is required.')
+                ->numeric('Grade must be a number.')
+                ->less_than_equal($submission['assignment_points'], 'Grade cannot exceed max points (' . $submission['assignment_points'] . ').')
+                ->greater_than_equal(0, 'Grade cannot be negative.'); 
+
+        if ($this->form_validation->run() == FALSE) {
+            $this->session->set_flashdata('validation_errors', $this->form_validation->get_errors());
+            redirect('/submissions/' . $submission_id . '/grade'); 
+            return;
+        }
+
+        // 4. Update the database
+        $grade = $this->io->post('grade');
+        $feedback = $this->io->post('feedback');
+
+        if ($this->Assignment_Submission_Model->update_grade($submission_id, $grade, $feedback)) {
+             $this->session->set_flashdata('success', 'Grade and feedback saved successfully.');
+        } else {
+             $this->session->set_flashdata('error', 'Failed to save grade. Please try again.');
+        }
+
+        // Redirect back to the list of submissions for that assignment
+        redirect('/assignments/' . $submission['assignment_id'] . '/submissions');
+    }
+    // --- END NEW METHOD ---
+
+
+    // --- PLACEHOLDER for Edit (Add this later) ---
+    public function edit($assignment_id) {
+        // TODO: Implement logic to show edit form
+        $this->session->set_flashdata('error', 'Edit assignment feature not yet implemented.');
+        // Find assignment details first
+        $assignment = $this->Assignment_Model->find($assignment_id); 
+        if ($assignment) {
+             redirect('/courses/show/' . $assignment['course_id']); // Redirect back to course page
+        } else {
+             redirect('/courses'); // Redirect to course list if assignment not found
+        }
+    }
+    // --- END PLACEHOLDER ---
+
 }
 ?>

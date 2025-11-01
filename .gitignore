@@ -17,3 +17,6 @@ runtime/*
 *.stTheme.cache
 *.sublime-workspace
 *.sublime-project
+
+# Secret files
+app/config/google_secrets.php
