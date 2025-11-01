@@ -3,7 +3,7 @@
 
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Navigation -->
-    <a href="<?php echo site_url('/courses/show/' . $course_id); ?>" class="text-sm text-blue-600 hover:underline mb-4 inline-block">
+     <a href="<?php echo site_url('/courses/show/' . $assignment['course_id']); ?>" class="text-sm text-blue-600 hover:underline mb-4 inline-block">
         <i class="fas fa-arrow-left mr-1"></i> Back to Course (<?php echo htmlspecialchars($assignment['title']); ?>)
     </a>
 

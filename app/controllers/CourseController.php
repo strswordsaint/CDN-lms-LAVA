@@ -14,9 +14,9 @@ class CourseController extends Controller {
         // Load the models
         $this->call->model('Course_Model');
         $this->call->model('Enrollment_Model');
-        // --- ADD THIS LINE ---
         $this->call->model('Assignment_Model');
-        // --- END ADD ---
+        $this->call->model('Resource_Model');
+        $this->call->model('Assignment_Attachment_Model');
 
         // Middleware: Check if user is logged in for all course actions
         $this->check_auth();
@@ -57,21 +57,31 @@ class CourseController extends Controller {
      */
     public function show($course_id) {
         $teacher_id = lava_instance()->session->userdata('user_id');
-        $course = $this->Course_Model->find_course($course_id, $teacher_id); // Check ownership
+        $course = $this->Course_Model->find_course($course_id, $teacher_id); 
 
         if (!$course) {
-            lava_instance()->session->set_flashdata('error', 'Course not found or you do not have permission to view it.');
+            lava_instance()->session->set_flashdata('error', 'Course not found or permission denied.');
             redirect('/courses');
-            return; // Stop execution
+            return; 
         }
 
         $data['course'] = $course;
-        // Fetch assignments - THIS LINE WILL NOW WORK
-        $data['assignments'] = $this->Assignment_Model->get_assignments_by_course($course_id);
+        
+        // --- NEW LOGIC FOR ATTACHMENTS ---
+        // 1. Get all assignments
+        $assignments = $this->Assignment_Model->get_assignments_by_course($course_id);
+        
+        // 2. Loop through and get attachments for each one
+        foreach ($assignments as $key => $assignment) {
+            $assignments[$key]['attachments'] = $this->Assignment_Attachment_Model->get_for_assignment($assignment['assignment_id']);
+        }
+        $data['assignments'] = $assignments;
+        // --- END NEW LOGIC ---
+        
+        $data['materials'] = $this->Resource_Model->get_for_course($course_id);
         $data['page_title'] = 'Manage Course: ' . htmlspecialchars($course['title']);
-        $this->call->view('/courses/ShowCourse', $data); // Use the new view name
+        $this->call->view('/courses/ShowCourse', $data);
     }
-
 
     /**
      * Show the form to create a new course. (CREATE form)

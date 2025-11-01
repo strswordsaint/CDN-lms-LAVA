@@ -1,7 +1,6 @@
 <?php defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed'); ?>
 <?php include 'app/views/layouts/header.php'; ?>
 
-<!-- Include Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <style>
@@ -54,7 +53,6 @@
     <div class="bg-white p-6 md:p-8 rounded-lg shadow-lg border border-gray-200">
         <h2 class="text-2xl font-bold text-center text-gray-800 mb-6"><?php echo $page_title ?? 'Create New Assignment'; ?></h2>
 
-        <!-- Flash Messages for upload errors or validation -->
         <?php if (!empty($error_message)): ?>
             <div class="notice notice-error mb-4" role="alert" style="display:block;">
                 <?php echo htmlspecialchars($error_message); ?>
@@ -71,11 +69,9 @@
                 </ul>
             </div>
         <?php endif; ?>
-        <!-- End Flash Messages -->
-
-        <!-- IMPORTANT: Add enctype="multipart/form-data" to the form tag -->
         <form action="<?php echo site_url('/courses/' . $course['course_id'] . '/assignments/store'); ?>" method="POST" enctype="multipart/form-data">
             <?php echo csrf_field(); ?>
+                <input type="hidden" name="course_id" value="<?php echo $course['course_id']; ?>">
 
             <div class="mb-5">
                 <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Assignment Title <span class="text-red-500">*</span></label>
@@ -91,10 +87,9 @@
                           placeholder="Enter instructions, questions, or a summary..."></textarea>
             </div>
             
-            <!-- NEW: File Upload Field -->
             <div class="mb-5">
                 <label for="attachment" class="block text-sm font-medium text-gray-700 mb-1">Attach File (Optional)</label>
-                <input type="file" id="attachment" name="attachment" class="file-input">
+                <input type="file" name="attachments[]" id="attachment" class="file-input" multiple>
                 <small class="text-xs text-gray-500">Attach instructions, a template, or reading material (e.g., PDF, DOCX, PPTX).</small>
             </div>
             
@@ -106,7 +101,7 @@
                            placeholder="e.g., 100" min="0">
                 </div>
 
-                <div class.="mb-5 md:mb-0">
+                <div class="mb-5 md:mb-0">
                     <label for="due_date" class="block text-sm font-medium text-gray-700 mb-1">Due Date <span class="text-red-500">*</span></label>
                     <input type="datetime-local" id="due_date" name="due_date" required
                            class="input-field w-full px-4 py-2 rounded-md">

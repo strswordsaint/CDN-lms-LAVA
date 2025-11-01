@@ -91,6 +91,7 @@ $router->get('/assignments/edit/{assign_id}', 'AssignmentController::edit')->whe
 $router->post('/assignments/update/{assign_id}', 'AssignmentController::update')->where_number('assign_id');
 $router->post('/assignments/delete/{assign_id}', 'AssignmentController::delete')->where_number('assign_id');
 $router->get('/assignments/{assign_id}/submissions', 'AssignmentController::view_submissions')->where_number('assign_id');
+$router->get('/assignments/all', 'AssignmentController::view_all')->name('assignments.all');
 // --- Assignment Grading (NEW) ---
 $router->get('/submissions/{sub_id}/grade', 'AssignmentController::show_grade_form')->where_number('sub_id');
 $router->post('/submissions/{sub_id}/grade', 'AssignmentController::process_grade')->where_number('sub_id');
@@ -107,8 +108,8 @@ $router->get('/courses/{id}/discussions/create', 'DiscussionController::create')
 $router->post('/courses/{id}/discussions/store', 'DiscussionController::store')->where_number('id');
 
 // --- Resource Management (NEW) ---
-$router->post('/courses/{id}/resources/upload', 'ResourceController::upload')->where_number('id');
-$router->post('/resources/delete/{resource_id}', 'ResourceController::delete')->where_number('resource_id');
+$router->post('/courses/{id}/materials/upload', 'ResourceController::upload')->where_number('id');
+$router->post('/materials/delete/{id}', 'ResourceController::delete')->where_number('id');
 
 /*
 | -------------------------------------------------------------------
@@ -125,6 +126,7 @@ $router->get('/courses/my', 'StudentController::my_courses')->name('courses.my')
 $router->get('/courses/{id}/enrollments', 'CourseController::manage_enrollments')->where_number('id')->name('courses.enrollments');
 $router->post('/enrollments/approve/{enrollment_id}', 'CourseController::approve_enrollment')->where_number('enrollment_id')->name('enrollments.approve');
 $router->post('/enrollments/reject/{enrollment_id}', 'CourseController::reject_enrollment')->where_number('enrollment_id')->name('enrollments.reject');
+$router->post('/courses/leave/{id}', 'StudentController::leave_course')->where_number('id')->name('courses.leave');
 
 // --- Course Content Views (NEW) ---
 // View a single enrolled course (dashboard)

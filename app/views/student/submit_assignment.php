@@ -27,8 +27,8 @@
 </style>
 
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <a href="<?php echo site_url('/my-courses/' . $course['course_id']); ?>" class="text-sm text-blue-600 hover:underline mb-4 inline-block">
-        <i class="fas fa-arrow-left mr-1"></i> Back to Course (<?php echo htmlspecialchars($course['title']); ?>)
+    <a href="<?php echo site_url('/my-assignments'); ?>" class="text-sm text-blue-600 hover:underline mb-4 inline-block">
+        <i class="fas fa-arrow-left mr-1"></i> Back to All Assignments
     </a>
 
     <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200 mb-6">
@@ -87,7 +87,7 @@
                 
                 <div class="mb-4">
                     <label for="submission_file" class="block text-sm font-medium text-gray-700 mb-1">Select File to Upload <span class="text-red-500">*</span></label>
-                    <input type="file" id="submission_file" name="submission_file" class="file-input" required>
+                    <input type="file" name="submission_files[]" id="submission_file" class="file-input" multiple required>
                     <small class="text-xs text-gray-500">Allowed types: PDF, DOCX, DOC, TXT, JPG, PNG, ZIP, PPT, PPTX</small>
                 </div>
 

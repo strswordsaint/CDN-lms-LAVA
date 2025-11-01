@@ -162,5 +162,27 @@ class Assignment_Model extends Model {
         
         return $this->db->raw($sql, [$student_id])->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function get_all_for_teacher($teacher_id) {
+        $sql = "
+            SELECT 
+                a.assignment_id, 
+                a.title, 
+                a.due_date, 
+                a.points,
+                c.title as course_title,
+                c.course_id
+            FROM 
+                {$this->table} a
+            JOIN 
+                courses c ON a.course_id = c.course_id
+            WHERE 
+                c.teacher_id = ?
+            ORDER BY 
+                a.due_date DESC
+        ";
+        
+        return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 ?>

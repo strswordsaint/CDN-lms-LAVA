@@ -11,10 +11,9 @@ class StudentController extends Controller {
         
         // Load the models we will need
         $this->call->model('Enrollment_Model');
-        $this->call->model('Course_Model'); // For finding the course
-        
-        // --- NEW: Load the Assignment Model ---
+        $this->call->model('Course_Model');
         $this->call->model('Assignment_Model'); 
+        $this->call->model('Resource_Model');
         
         // Protect this entire controller
         $this->check_auth();
@@ -128,6 +127,8 @@ class StudentController extends Controller {
                                     ->filter(['course_id' => $course_id])
                                     ->order_by('due_date', 'ASC')
                                     ->get_all();
+
+        $data['materials'] = $this->Resource_Model->get_for_course($course_id);
         
         $data['page_title'] = $data['course']['title'];
         
@@ -296,5 +297,32 @@ class StudentController extends Controller {
         $this->call->view('/student/all_assignments', $data);
     }
     
+    public function leave_course($enrollment_id) {
+        $student_id = $this->session->userdata('user_id');
+
+        // 1. Find the enrollment record
+        $enrollment = $this->Enrollment_Model->find($enrollment_id);
+
+        // 2. Security Check: Ensure the record exists and belongs to the logged-in student
+        if (!$enrollment || $enrollment['student_id'] != $student_id) {
+            $this->session->set_flashdata('error', 'Unable to perform this action.');
+            redirect('/courses/my');
+            return;
+        }
+
+        // 3. Delete the enrollment record
+        if ($this->Enrollment_Model->delete_enrollment($enrollment_id)) {
+            if ($enrollment['status'] == 'pending') {
+                $this->session->set_flashdata('success', 'Enrollment request successfully cancelled.');
+            } else {
+                $this->session->set_flashdata('success', 'You have successfully left the course.');
+            }
+        } else {
+            $this->session->set_flashdata('error', 'An error occurred. Please try again.');
+        }
+
+        redirect('/courses/my');
+    }
+
 }
 ?>

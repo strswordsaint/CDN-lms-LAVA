@@ -49,13 +49,22 @@
         body { background-color: #F5F5F5; color: #1E293B; }
         .main-layout { height: calc(100vh - 52px); /* Full height minus top-nav */ }
         
+        /* === NEW CSS FOR ICON-OVER-TEXT SIDEBAR === */
         .sidebar-nav-link {
-            display: flex; align-items: center; width: 100%;
-            padding: 0.75rem 1rem; /* 12px vertical, 16px horizontal */
-            color: #333333; font-weight: 500; font-size: 0.9rem;
-            border-radius: 6px; transition: background-color 0.2s, color 0.2s;
-            white-space: nowrap; /* Prevent text wrap during animation */
-            overflow: hidden; /* Hide text as it slides out */
+            display: flex;
+            flex-direction: column; /* Stack icon over text */
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 4.5rem; /* 72px height for each button */
+            padding: 0.5rem 0.25rem; /* Vertical/Horizontal padding */
+            color: #333333;
+            font-size: 0.75rem; /* 12px for the label */
+            font-weight: 500;
+            border-radius: 6px;
+            transition: background-color 0.2s, color 0.2s;
+            white-space: nowrap;
+            text-align: center;
         }
         .sidebar-nav-link:hover { background-color: #F0F0F0; text-decoration: none; }
         .sidebar-nav-link.active {
@@ -64,32 +73,14 @@
             font-weight: 600;
         }
         .sidebar-nav-link i { 
-            width: 1.25rem; /* 20px */
-            margin-right: 0.75rem; /* 12px space between icon and text */
+            width: auto; /* Remove fixed width */
+            margin-right: 0; /* Remove old margin */
+            margin-bottom: 0.375rem; /* 6px space between icon and text */
+            font-size: 1.5rem; /* 24px icon */
             text-align: center;
-            flex-shrink: 0; /* Prevent icon from shrinking */
-            font-size: 1.125rem;
-            transition: margin 0.3s ease-in-out;
         }
-        .sidebar-text {
-            transition: opacity 0.2s ease-in-out;
-        }
+        /* We no longer need .sidebar-text or .collapsed styles */
 
-        /* == Collapsed State Styles == */
-        #app-sidebar.collapsed {
-            width: 5rem; /* 80px */
-        }
-        #app-sidebar.collapsed .sidebar-text {
-            opacity: 0;
-            display: none; /* Hide text */
-        }
-        #app-sidebar.collapsed .sidebar-nav-link {
-            justify-content: center; /* Center the icon */
-        }
-        #app-sidebar.collapsed .sidebar-nav-link i {
-            margin-right: 0; /* Remove margin when text is hidden */
-            font-size: 1.25rem; /* Slightly larger icon */
-        }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -106,21 +97,20 @@
 
         // === UPDATED: Active link logic ===
         $current_segment = segment(2);
-        // This will highlight all course-related buttons if you are in any of these sections
-        $is_teacher_section = in_array($current_segment, ['courses', 'assignments', 'submissions', 'activities']);
-        // NEW: Active logic for students
-        $is_student_course_section = (segment(3) == 'my' || $current_segment == 'my-courses' || $current_segment == 'assignment');
+        
+        // --- Teacher Logic ---
+        $is_courses_section = in_array($current_segment, ['courses', 'submissions']);
+        $is_assignments_section = ($current_segment == 'assignments');
+        $is_teacher_activities_section = in_array($current_segment, ['activities']); // For the "Activities" button
+
+        // --- Student Logic ---
+        $is_my_courses_active = (segment(3) == 'my' || $current_segment == 'my-courses');
+        $is_assignments_active = ($current_segment == 'my-assignments' || $current_segment == 'assignment');
     ?>
 
     <nav class="bg-cdn-blue shadow-md z-20 relative" style="height: 52px;">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 h-full flex justify-between items-center">
             <div class="flex items-center space-x-2">
-                
-                <?php if ($is_logged_in): ?>
-                <button id="sidebar-toggle" class="text-white p-2 rounded-md hover:bg-cdn-light-blue focus:outline-none">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <?php endif; ?>
                 
                 <a href="<?php echo site_url('/'); ?>" class="flex items-center space-x-2 text-white hover:text-cdn-light-blue transition duration-200">
                     <img src="<?php echo base_url(); ?>public/images/Logo2.jpg" alt="Colegio de Naujan Logo" class="h-8 w-8 rounded-full border border-white shadow-sm">
@@ -145,62 +135,68 @@
     <div class="flex main-layout">
         
         <?php if ($is_logged_in): // ONLY show sidebar if logged in ?>
-        <aside id="app-sidebar" class="w-60 bg-teams-sidebar border-r border-gray-200 p-3 flex-shrink-0 overflow-y-auto transition-all duration-300 ease-in-out z-10">
+        <aside id="app-sidebar" class="w-20 bg-teams-sidebar border-r border-gray-200 p-3 flex-shrink-0 overflow-y-auto z-10">
             <nav>
                 <ul class="space-y-1">
                     <li>
                         <a href="<?php echo site_url('/dashboard'); ?>" 
+                           title="Dashboard"
                            class="sidebar-nav-link <?php echo ($current_segment == 'dashboard') ? 'active' : ''; ?>">
-                           <i class="fas fa-home"></i><span class="sidebar-text">Dashboard</span>
+                           <i class="fas fa-home"></i>
+                           <span>Dashboard</span>
                         </a>
                     </li>
                     
                     <?php if ($user_role == 'teacher' || $user_role == 'admin'): ?>
                     <li>
                         <a href="<?php echo site_url('/courses'); ?>" 
-                           class="sidebar-nav-link <?php echo $is_teacher_section ? 'active' : ''; ?>">
-                           <i class="fas fa-book-open"></i><span class="sidebar-text">Manage Courses</span>
+                           title="Manage Courses"
+                           class="sidebar-nav-link <?php echo $is_courses_section ? 'active' : ''; ?>">
+                           <i class="fas fa-book-open"></i>
+                           <span>Courses</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="<?php echo site_url('/assignments/all'); ?>" 
+                           title="Assignments"
+                           class="sidebar-nav-link <?php echo $is_assignments_section ? 'active' : ''; ?>">
+                           <i class="fas fa-tasks"></i>
+                           <span>Assignments</span>
                         </a>
                     </li>
                     <li>
                         <a href="<?php echo site_url('/courses'); ?>" 
-                           title="View Courses to Manage Assignments"
-                           class="sidebar-nav-link <?php echo $is_teacher_section ? 'active' : ''; ?>">
-                           <i class="fas fa-tasks"></i><span class="sidebar-text">Assignments</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo site_url('/courses'); ?>" 
-                           title="Manage Activities (Coming Soon)"
-                           class="sidebar-nav-link <?php echo $is_teacher_section ? 'active' : ''; ?>">
-                           <i class="fas fa-rocket"></i><span class="sidebar-text">Activities</span>
+                           title="Activities (Coming Soon)"
+                           class="sidebar-nav-link <?php echo $is_teacher_activities_section ? 'active' : ''; ?>">
+                           <i class="fas fa-rocket"></i>
+                           <span>Activities</span>
                         </a>
                     </li>
                     <?php endif; ?>
 
                     <?php if ($user_role == 'student'): ?>
-                    <?php
-                        // Updated active logic
-                        $is_my_courses_active = (segment(3) == 'my' || $current_segment == 'my-courses');
-                        $is_assignments_active = ($current_segment == 'my-assignments' || $current_segment == 'assignment');
-                    ?>
                     <li>
                         <a href="<?php echo site_url('/courses/my'); ?>" 
+                           title="My Courses"
                            class="sidebar-nav-link <?php echo $is_my_courses_active ? 'active' : ''; ?>">
-                           <i class="fas fa-chalkboard"></i><span class="sidebar-text">My Courses</span>
+                           <i class="fas fa-chalkboard"></i>
+                           <span>My Courses</span>
                         </a>
                     </li>
                     <li>
                         <a href="<?php echo site_url('/my-assignments'); ?>" 
                            title="View All Assignments"
                            class="sidebar-nav-link <?php echo $is_assignments_active ? 'active' : ''; ?>">
-                           <i class="fas fa-tasks"></i><span class="sidebar-text">Assignments</span>
+                           <i class="fas fa-tasks"></i>
+                           <span>Assignments</span>
                         </a>
                     </li>
                     <li>
                         <a href="<?php echo site_url('/courses/my'); ?>" 
                            title="View Activities in My Courses"
-                           class="sidebar-nav-link"> <i class="fas fa-rocket"></i><span class="sidebar-text">Activities</span>
+                           class="sidebar-nav-link">
+                           <i class="fas fa-rocket"></i>
+                           <span>Activities</span>
                         </a>
                     </li>
                     <?php endif; ?>
