@@ -337,6 +337,8 @@ class CourseController extends Controller {
         } while ($exists);
         return $code;
     }
+
+    
     
 }
 ?>
