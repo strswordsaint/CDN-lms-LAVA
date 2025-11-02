@@ -15,6 +15,9 @@ class StudentController extends Controller {
         $this->call->model('Assignment_Model'); 
         $this->call->model('Resource_Model');
         
+        // --- ADDED THIS LINE ---
+        $this->call->library('Upload');
+        
         // Protect this entire controller
         $this->check_auth();
     }
@@ -47,7 +50,6 @@ class StudentController extends Controller {
         $data['my_courses'] = $this->Enrollment_Model->get_student_courses($student_id);
         $data['page_title'] = 'My Courses';
         
-        // Create this view file next if it doesn't exist
         $this->call->view('/student/my_courses', $data); 
     }
 
@@ -56,12 +58,13 @@ class StudentController extends Controller {
      * Corresponds to route: $router->post('/courses/enroll', 'StudentController::enroll');
      */
     public function enroll() {
-        $enrollment_code = $this->io->post('enrollment_code');
+        // We trim the input to remove any spaces from copy-pasting.
+        $enrollment_code = trim($this->io->post('enrollment_code'));
         $student_id = $this->session->userdata('user_id');
 
         if (empty($enrollment_code)) {
             $this->session->set_flashdata('error', 'Please enter an enrollment code.');
-            redirect('/dashboard');
+            redirect('/courses/my'); // Updated redirect
             return;
         }
 
@@ -70,7 +73,7 @@ class StudentController extends Controller {
 
         if (!$course) {
             $this->session->set_flashdata('error', 'Invalid enrollment code.');
-            redirect('/dashboard');
+            redirect('/courses/my'); // Updated redirect
             return;
         }
         
@@ -79,7 +82,7 @@ class StudentController extends Controller {
 
         if ($is_enrolled) {
             $this->session->set_flashdata('error', 'You have already requested or are enrolled in that course.');
-            redirect('/dashboard');
+            redirect('/courses/my'); // Updated redirect
             return;
         }
         
@@ -96,7 +99,7 @@ class StudentController extends Controller {
             $this->session->set_flashdata('error', 'An error occurred during enrollment. Please try again.');
         }
         
-        redirect('/dashboard');
+        redirect('/courses/my'); // Updated redirect
     }
 
     /**
@@ -122,7 +125,7 @@ class StudentController extends Controller {
         // 2. Get course details
         $data['course'] = $this->Course_Model->find($course_id);
         
-        // --- NEW: Get all assignments for this course ---
+        // Get all assignments for this course
         $data['assignments'] = $this->Assignment_Model
                                     ->filter(['course_id' => $course_id])
                                     ->order_by('due_date', 'ASC')
@@ -132,9 +135,6 @@ class StudentController extends Controller {
         
         $data['page_title'] = $data['course']['title'];
         
-        // --- NEW: We will check submission status later ---
-        // For now, we just pass the assignments to the view
-        
         $this->call->view('/student/view_course', $data);
     }
     
@@ -142,10 +142,10 @@ class StudentController extends Controller {
         $student_id = $this->session->userdata('user_id');
 
         // 1. Get assignment details
-        $assignment = $this->Assignment_Model->find($assignment_id); // Find using primary key
+        $assignment = $this->Assignment_Model->find($assignment_id); 
         if (!$assignment) {
             $this->session->set_flashdata('error', 'Assignment not found.');
-            redirect('/dashboard'); // Or maybe back to the course page?
+            redirect('/dashboard');
             return;
         }
 
@@ -166,14 +166,13 @@ class StudentController extends Controller {
         $data['course'] = $this->Course_Model->find($assignment['course_id']);
         
         // 4. Check if the student has already submitted
-        $this->call->model('Assignment_Submission_Model'); // Load the submission model
+        $this->call->model('Assignment_Submission_Model'); 
         $data['submission'] = $this->Assignment_Submission_Model->check_existing_submission($student_id, $assignment_id);
 
         $data['assignment'] = $assignment;
         $data['page_title'] = 'Submit: ' . htmlspecialchars($assignment['title']);
-        $data['error_message'] = $this->session->flashdata('error'); // For upload errors
+        $data['error_message'] = $this->session->flashdata('error');
 
-        // We will create this view file next
         $this->call->view('/student/submit_assignment', $data);
     }
 
@@ -184,7 +183,7 @@ class StudentController extends Controller {
    public function submit_assignment($assignment_id) {
         $student_id = $this->session->userdata('user_id');
 
-        // 1. Get assignment details (needed for validation and saving)
+        // 1. Get assignment details
         $assignment = $this->Assignment_Model->find($assignment_id);
         if (!$assignment) {
             $this->session->set_flashdata('error', 'Assignment not found.');
@@ -209,82 +208,101 @@ class StudentController extends Controller {
         $existing_submission = $this->Assignment_Submission_Model->check_existing_submission($student_id, $assignment_id);
         if ($existing_submission) {
              $this->session->set_flashdata('error', 'You have already submitted this assignment.');
-             redirect('/assignment/' . $assignment_id); // Redirect back to the assignment page
+             redirect('/assignment/' . $assignment_id);
              return;
         }
 
-        // 4. Handle File Upload
-        if (!isset($_FILES['submission_file']) || $_FILES['submission_file']['error'] != UPLOAD_ERR_OK) {
+        // 4. Handle Multiple File Uploads
+        $files = $_FILES['submission_files'] ?? null;
+        
+        if (!$files || empty($files['name'][0])) {
             $this->session->set_flashdata('error', 'File upload failed or no file selected. Please try again.');
             redirect('/assignment/' . $assignment_id);
             return;
         }
 
-        // Use the Upload library (make sure it's loaded, e.g., in BaseController or here)
-        $this->call->library('Upload', $_FILES['submission_file']); // Pass file info
-
-        // Define upload directory (relative to index.php)
+        // --- NEW MULTI-UPLOAD LOGIC (COPIED FROM AssignmentController) ---
         $upload_dir = 'uploads/assignments/submissions/' . $assignment['course_id'] . '/' . $assignment_id;
-        
-        // Create the directory if it doesn't exist (course_id/assignment_id structure)
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
-        }
+        if (!is_dir($upload_dir)) { mkdir($upload_dir, 0755, true); }
 
+        // Set the *constant* settings for the library
         $this->Upload->set_dir($upload_dir);
-        // Allow common document/image/archive types
-        $this->Upload->allowed_extensions(array('pdf', 'docx', 'doc', 'txt', 'jpg', 'png', 'zip', 'ppt', 'pptx')); 
+        
+        // --- COPIED FROM AssignmentController to allow all file types ---
+        $this->Upload->allowed_extensions(array('pdf', 'docx', 'doc', 'pptx', 'ppt', 'txt', 'jpg', 'png', 'zip', 'mp4', 'mov', 'xls', 'xlsx'));
         $this->Upload->allowed_mimes(array(
-            'application/pdf', 
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
-            'application/msword', // doc
-            'text/plain', 
-            'image/jpeg', 
-            'image/png', 
-            'application/zip', 
-            'application/vnd.ms-powerpoint', // ppt
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation' //pptx
-        )); 
+            'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint',
+            'text/plain', 'image/jpeg', 'image/png', 'application/zip', 'video/mp4', 'video/quicktime',
+            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ));
+        // --- END COPY ---
         
-        // --- THIS IS THE FIX ---
-        // Let the library handle unique filenames
-        $this->Upload->encrypt_name(); 
-        
-        // Remove the manual filename generation and the call to set_filename()
-        // $original_name = pathinfo($_FILES['submission_file']['name'], PATHINFO_FILENAME);
-        // $extension = pathinfo($_FILES['submission_file']['name'], PATHINFO_EXTENSION);
-        // $new_filename = $student_id . '_' . time() . '_' . preg_replace("/[^a-zA-Z0-9_.]/", "_", $original_name) . '.' . $extension;
-        // $this->Upload->set_filename($new_filename); // REMOVED THIS LINE
-        // --- END FIX ---
+        $uploaded_file_data = []; // To store paths for the JSON
+        $file_count = count($files['name']);
+        $at_least_one_file_success = false;
 
+        for ($i = 0; $i < $file_count; $i++) {
+            if (empty($files['name'][$i]) || $files['error'][$i] !== UPLOAD_ERR_OK) {
+                continue; // Skip empty/failed uploads
+            }
 
-        if ($this->Upload->do_upload()) {
-            $uploaded_filename = $this->Upload->get_filename();
-            $file_path = $upload_dir . '/' . $uploaded_filename;
-
-            // 5. Save submission record to database
-            $submission_data = [
-                'assignment_id' => $assignment_id,
-                'student_id'    => $student_id,
-                'file_path'     => $file_path
+            $file_to_upload = [
+                'name' => $files['name'][$i],
+                'type' => $files['type'][$i],
+                'tmp_name' => $files['tmp_name'][$i],
+                'error' => $files['error'][$i],
+                'size' => $files['size'][$i],
             ];
 
-            if ($this->Assignment_Submission_Model->insert($submission_data)) {
-                $this->session->set_flashdata('success', 'Assignment submitted successfully!');
-                // Redirect back to the main course page after successful submission
-                redirect('/my-courses/' . $assignment['course_id']); 
+            // Manually set the library's 'file' property
+            $this->Upload->file = $file_to_upload;
+            $this->Upload->encrypt_name(); // Make filename unique
+
+            if ($this->Upload->do_upload()) {
+                $at_least_one_file_success = true;
+                // Store the new filename and original name for the DB
+                $uploaded_file_data[] = [
+                    'file_path' => $upload_dir . '/' . $this->Upload->get_filename(),
+                    'file_name' => $file_to_upload['name']
+                ];
             } else {
-                // Database insert failed, delete uploaded file
-                @unlink($file_path); 
-                $this->session->set_flashdata('error', 'Database error: Could not save submission.');
+                // If *any* file fails, stop, delete already uploaded files, and show error
+                foreach ($uploaded_file_data as $file) {
+                    @unlink($file['file_path']);
+                }
+                $this->session->set_flashdata('error', 'File upload failed: ' . $this->Upload->get_errors()[0]);
                 redirect('/assignment/' . $assignment_id);
+                return;
             }
+        }
+
+        if (!$at_least_one_file_success) {
+             $this->session->set_flashdata('error', 'No valid files were uploaded.');
+             redirect('/assignment/' . $assignment_id);
+             return;
+        }
+
+        // 5. Save the JSON list of files to the database
+        $submission_data = [
+            'assignment_id' => $assignment_id,
+            'student_id'    => $student_id,
+            'file_path'     => json_encode($uploaded_file_data) // Save the list as a JSON string
+        ];
+
+        if ($this->Assignment_Submission_Model->insert($submission_data)) {
+            $this->session->set_flashdata('success', 'Assignment (with ' . count($uploaded_file_data) . ' files) submitted successfully!');
+            redirect('/my-courses/' . $assignment['course_id']); 
         } else {
-            // Upload failed
-            $this->session->set_flashdata('error', 'File upload failed: ' . $this->Upload->get_errors()[0]);
+            // Database insert failed, delete all uploaded files
+            foreach ($uploaded_file_data as $file) {
+                @unlink($file['file_path']);
+            }
+            $this->session->set_flashdata('error', 'Database error: Could not save submission.');
             redirect('/assignment/' . $assignment_id);
         }
     }
+    
     public function view_all_assignments() {
         $student_id = $this->session->userdata('user_id');
         
@@ -293,7 +311,6 @@ class StudentController extends Controller {
         
         $data['page_title'] = 'All Assignments';
         
-        // 2. We will create this new view file next
         $this->call->view('/student/all_assignments', $data);
     }
     

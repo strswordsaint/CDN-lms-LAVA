@@ -61,6 +61,49 @@ $router->post('/auth/complete_google_register', 'AuthController::complete_google
 // --- Dashboards (Works) ---
 $router->get('/dashboard', 'DashboardController::index')->name('dashboard');
 
+
+// ===================================================================
+// === MOVED STUDENT COURSE ROUTES HERE TO FIX 404 ERROR ===
+// Specific routes MUST come before wildcard routes.
+/*
+| -------------------------------------------------------------------
+| STUDENT ROUTES
+| -------------------------------------------------------------------
+*/
+
+// --- Enrollment (NEW) ---
+$router->get('/courses/all', 'StudentController::browse_courses')->name('courses.all'); // Browse all courses
+$router->post('/courses/enroll', 'StudentController::enroll'); // Form submission with a course code
+$router->get('/courses/my', 'StudentController::my_courses')->name('courses.my'); // View enrolled courses
+$router->post('/courses/leave/{id}', 'StudentController::leave_course')->where_number('id')->name('courses.leave');
+
+// --- Course Content Views (NEW) ---
+// View a single enrolled course (dashboard)
+$router->get('/my-courses/{id}', 'StudentController::view_course')->where_number('id');
+// View assignments for that course
+$router->get('/my-courses/{id}/assignments', 'StudentController::view_assignments')->where_number('id');
+// View a single assignment (and submit)
+// View a single assignment (and submit)
+$router->get('/assignment/{assign_id}', 'StudentController::view_assignment')->where_number('assign_id');
+$router->post('/assignment/{assign_id}/submit', 'StudentController::submit_assignment')->where_number('assign_id');
+// view assignments list
+$router->get('/my-assignments', 'StudentController::view_all_assignments')->name('student.assignments');
+// --- Student Quiz Taking (NEW) ---
+$router->get('/my-courses/{id}/quizzes', 'StudentController::view_quizzes')->where_number('id');
+$router->get('/quiz/{quiz_id}/take', 'StudentController::take_quiz')->where_number('quiz_id');
+$router->post('/quiz/{quiz_id}/submit', 'StudentController::submit_quiz')->where_number('quiz_id');
+$router->get('/quiz/{quiz_id}/results', 'StudentController::view_quiz_results')->where_number('quiz_id');
+
+// --- Student Discussions (NEW) ---
+$router->get('/my-courses/{id}/discussions', 'StudentController::view_discussions')->where_number('id');
+$router->get('/discussion/{disc_id}', 'StudentController::view_discussion')->where_number('disc_id');
+$router->post('/discussion/{disc_id}/post', 'StudentController::post_reply')->where_number('disc_id');
+
+// --- Student Grades (NEW) ---
+$router->get('/my-grades', 'StudentController::view_grades');
+// ===================================================================
+
+
 /*
 | -------------------------------------------------------------------
 | TEACHER / INSTRUCTOR ROUTES
@@ -111,45 +154,16 @@ $router->post('/courses/{id}/discussions/store', 'DiscussionController::store')-
 $router->post('/courses/{id}/materials/upload', 'ResourceController::upload')->where_number('id');
 $router->post('/materials/delete/{id}', 'ResourceController::delete')->where_number('id');
 
+
 /*
 | -------------------------------------------------------------------
-| STUDENT ROUTES
+| STUDENT ROUTES (Original Position - Now Moved)
 | -------------------------------------------------------------------
 */
-
-// --- Enrollment (NEW) ---
-$router->get('/courses/all', 'StudentController::browse_courses')->name('courses.all'); // Browse all courses
-$router->post('/courses/enroll', 'StudentController::enroll'); // Form submission with a course code
-$router->get('/courses/my', 'StudentController::my_courses')->name('courses.my'); // View enrolled courses
 
 // --- Enrollment Management (NEW - Teacher Side) ---
 $router->get('/courses/{id}/enrollments', 'CourseController::manage_enrollments')->where_number('id')->name('courses.enrollments');
 $router->post('/enrollments/approve/{enrollment_id}', 'CourseController::approve_enrollment')->where_number('enrollment_id')->name('enrollments.approve');
 $router->post('/enrollments/reject/{enrollment_id}', 'CourseController::reject_enrollment')->where_number('enrollment_id')->name('enrollments.reject');
-$router->post('/courses/leave/{id}', 'StudentController::leave_course')->where_number('id')->name('courses.leave');
 
-// --- Course Content Views (NEW) ---
-// View a single enrolled course (dashboard)
-$router->get('/my-courses/{id}', 'StudentController::view_course')->where_number('id');
-// View assignments for that course
-$router->get('/my-courses/{id}/assignments', 'StudentController::view_assignments')->where_number('id');
-// View a single assignment (and submit)
-// View a single assignment (and submit)
-$router->get('/assignment/{assign_id}', 'StudentController::view_assignment')->where_number('assign_id');
-$router->post('/assignment/{assign_id}/submit', 'StudentController::submit_assignment')->where_number('assign_id');
-// view assignments list
-$router->get('/my-assignments', 'StudentController::view_all_assignments')->name('student.assignments');
-// --- Student Quiz Taking (NEW) ---
-$router->get('/my-courses/{id}/quizzes', 'StudentController::view_quizzes')->where_number('id');
-$router->get('/quiz/{quiz_id}/take', 'StudentController::take_quiz')->where_number('quiz_id');
-$router->post('/quiz/{quiz_id}/submit', 'StudentController::submit_quiz')->where_number('quiz_id');
-$router->get('/quiz/{quiz_id}/results', 'StudentController::view_quiz_results')->where_number('quiz_id');
-
-// --- Student Discussions (NEW) ---
-$router->get('/my-courses/{id}/discussions', 'StudentController::view_discussions')->where_number('id');
-$router->get('/discussion/{disc_id}', 'StudentController::view_discussion')->where_number('disc_id');
-$router->post('/discussion/{disc_id}/post', 'StudentController::post_reply')->where_number('disc_id');
-
-// --- Student Grades (NEW) ---
-$router->get('/my-grades', 'StudentController::view_grades');
 ?>
