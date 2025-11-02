@@ -20,7 +20,6 @@
     <div class="flex-shrink-0 flex items-center gap-2">
         <a href="<?php echo site_url('/assignments/' . $assignment['assignment_id'] . '/submissions'); ?>" class="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 py-2 px-4 rounded-md shadow-sm">
             View Submissions
-            <i class="fas fa-arrow-right ml-1"></i>
         </a>
     </div>
 </div>

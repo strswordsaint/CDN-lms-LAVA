@@ -69,7 +69,7 @@
         .sidebar-nav-link:hover { background-color: #F0F0F0; text-decoration: none; }
         .sidebar-nav-link.active {
             background-color: #EAEAEA;
-            color: #6264A7; /* Teams Purple */
+            color: #1747a0ff; /* Teams Purple */
             font-weight: 600;
         }
         .sidebar-nav-link i { 
