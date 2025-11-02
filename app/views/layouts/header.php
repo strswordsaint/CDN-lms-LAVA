@@ -113,7 +113,7 @@
             <div class="flex items-center space-x-2">
                 
                 <a href="<?php echo site_url('/'); ?>" class="flex items-center space-x-2 text-white hover:text-cdn-light-blue transition duration-200">
-                    <img src="<?php echo base_url(); ?>public/images/Logo2.jpg" alt="Colegio de Naujan Logo" class="h-8 w-8 rounded-full border border-white shadow-sm">
+                    <img src="<?php echo base_url(); ?>public/images/Logo2.png" alt="Colegio de Naujan Logo" class="h-8 w-8 rounded-full border border-white shadow-sm">
                     <span class="text-lg font-semibold tracking-wide">Colegio de Naujan LMS</span>
                 </a>
             </div>

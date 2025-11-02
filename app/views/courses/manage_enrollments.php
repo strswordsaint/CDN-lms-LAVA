@@ -129,12 +129,13 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrolled On</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <?php if (empty($approved_enrollments)): ?>
                         <tr>
-                            <td colspan="3" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
+                            <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500">
                                 No students have been approved for this course yet.
                             </td>
                         </tr>
@@ -149,6 +150,14 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <?php echo date('M d, Y', strtotime($enrollment['enrolled_at'])); ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <form action="<?php echo site_url('/enrollments/remove/' . $enrollment['enrollment_id']); ?>" method="POST" class="action-form" onsubmit="return confirm('Are you sure you want to remove this student from the course?');">
+                                        <?php echo csrf_field(); ?>
+                                        <button type="submit" class="btn-reject">
+                                            <i class="fas fa-user-minus mr-1"></i> Remove
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
