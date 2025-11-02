@@ -50,7 +50,6 @@
                         <div>
                             <a href="<?php echo site_url('/assignment/' . $assignment['assignment_id']); ?>" class="text-sm font-semibold text-white <?php echo $assignment['submission_id'] ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'; ?> py-2 px-4 rounded-md shadow-sm">
                                 <?php echo $assignment['submission_id'] ? 'View Submission' : 'Submit Work'; ?>
-                                <i class="fas fa-arrow-right ml-1"></i>
                             </a>
                         </div>
                     </div>
