@@ -198,7 +198,7 @@ class CourseController extends Controller {
             ];
 
             // Update using the model (update method is inherited)
-            $updated = $this->Course_Model->update($course_id, $data);
+            $updated = $this->Course_Model->update_course($course_id, $data);
 
             if ($updated) {
                 $session->set_flashdata('success', 'Course updated successfully!');
@@ -227,9 +227,7 @@ class CourseController extends Controller {
         // Perform deletion using the model's delete (or soft_delete) method
         // Check config if soft delete is enabled
         $soft_delete_enabled = config_item('soft_delete');
-        $deleted = $soft_delete_enabled
-                        ? $this->Course_Model->soft_delete($course_id)
-                        : $this->Course_Model->delete($course_id);
+        $deleted = $this->Course_Model->delete_course($course_id, $soft_delete_enabled);
 
 
         if ($deleted) {
@@ -321,7 +319,36 @@ class CourseController extends Controller {
         
         redirect('/courses/' . $enrollment['course_id'] . '/enrollments');
     }
+    /**
+     * Remove an approved student from the course.
+     */
+    public function remove_enrollment($enrollment_id) {
+        $teacher_id = $this->session->userdata('user_id');
+        
+        $enrollment = $this->Enrollment_Model->find($enrollment_id);
+        if (!$enrollment) {
+             $this->session->set_flashdata('error', 'Enrollment record not found.');
+             redirect($_SERVER['HTTP_REFERER'] ?? '/courses');
+             return;
+        }
 
+        // Security check: Make sure the teacher owns this course
+        $course = $this->Course_Model->find_course($enrollment['course_id'], $teacher_id);
+        if (!$course) {
+             $this->session->set_flashdata('error', 'You do not have permission to manage this course.');
+             redirect('/courses');
+             return;
+        }
+
+        // Use the safe delete function we created in Enrollment_Model
+        if ($this->Enrollment_Model->delete_enrollment($enrollment_id)) {
+             $this->session->set_flashdata('success', 'Student removed from the course.');
+        } else {
+             $this->session->set_flashdata('error', 'Failed to remove the student.');
+        }
+        
+        redirect('/courses/' . $enrollment['course_id'] . '/enrollments');
+    }
     /**
     * Private helper function to generate a unique enrollment code.
     */
@@ -338,7 +365,6 @@ class CourseController extends Controller {
         return $code;
     }
 
-    
     
 }
 ?>

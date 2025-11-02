@@ -75,8 +75,6 @@ $router->get('/dashboard', 'DashboardController::index')->name('dashboard');
 $router->get('/courses/all', 'StudentController::browse_courses')->name('courses.all'); // Browse all courses
 $router->post('/courses/enroll', 'StudentController::enroll'); // Form submission with a course code
 $router->get('/courses/my', 'StudentController::my_courses')->name('courses.my'); // View enrolled courses
-$router->post('/courses/leave/{id}', 'StudentController::leave_course')->where_number('id')->name('courses.leave');
-
 // --- Course Content Views (NEW) ---
 // View a single enrolled course (dashboard)
 $router->get('/my-courses/{id}', 'StudentController::view_course')->where_number('id');
@@ -165,5 +163,8 @@ $router->post('/materials/delete/{id}', 'ResourceController::delete')->where_num
 $router->get('/courses/{id}/enrollments', 'CourseController::manage_enrollments')->where_number('id')->name('courses.enrollments');
 $router->post('/enrollments/approve/{enrollment_id}', 'CourseController::approve_enrollment')->where_number('enrollment_id')->name('enrollments.approve');
 $router->post('/enrollments/reject/{enrollment_id}', 'CourseController::reject_enrollment')->where_number('enrollment_id')->name('enrollments.reject');
+$router->post('/enrollments/remove/{enrollment_id}', 'CourseController::remove_enrollment')->where_number('enrollment_id')->name('enrollments.remove');
+$router->post('/courses/leave/{id}', 'StudentController::leave_course')->where_number('id')->name('courses.leave');
+
 
 ?>

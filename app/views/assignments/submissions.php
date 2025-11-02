@@ -3,8 +3,8 @@
 
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Navigation -->
-     <a href="<?php echo site_url('/courses/show/' . $assignment['course_id']); ?>" class="text-sm text-blue-600 hover:underline mb-4 inline-block">
-        <i class="fas fa-arrow-left mr-1"></i> Back to Course (<?php echo htmlspecialchars($assignment['title']); ?>)
+     <a href="<?php echo site_url('/assignments/all'); ?>" class="text-sm text-blue-600 hover:underline mb-4 inline-block">
+        <i class="fas fa-arrow-left mr-1"></i> Back to All Assignments
     </a>
 
     <h1 class="text-2xl font-bold text-gray-800 mb-6"><?php echo $page_title ?? 'View Submissions'; ?></h1>

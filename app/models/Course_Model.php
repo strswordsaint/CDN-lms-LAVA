@@ -72,6 +72,29 @@ class Course_Model extends Model {
         return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // You can add update_course and delete_course methods here later,
-    // potentially using $this->update() and $this->delete() from the base Model.
+    public function update_course($course_id, $data) {
+        try {
+            $this->update($course_id, $data);
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Safely delete a course.
+     * @return bool TRUE on success, FALSE on failure
+     */
+    public function delete_course($course_id, $soft_delete_enabled) {
+        try {
+            if ($soft_delete_enabled) {
+                $this->soft_delete($course_id);
+            } else {
+                $this->delete($course_id);
+            }
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
 }
