@@ -127,5 +127,17 @@ class Enrollment_Model extends Model {
             return false;
         }
     }
+
+    public function count_pending_for_teacher($teacher_id) {
+        $sql = "
+            SELECT COUNT(e.enrollment_id) as pending_count
+            FROM {$this->table} e
+            JOIN courses c ON e.course_id = c.course_id
+            WHERE c.teacher_id = ?
+            AND e.status = 'pending'
+        ";
+        $result = $this->db->raw($sql, [$teacher_id])->fetch(PDO::FETCH_ASSOC);
+        return $result['pending_count'] ?? 0;
+    }
 }
 ?>

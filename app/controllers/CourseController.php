@@ -43,7 +43,7 @@ class CourseController extends Controller {
      */
     public function index() {
         $teacher_id = lava_instance()->session->userdata('user_id');
-        $data['courses'] = $this->Course_Model->get_courses_by_teacher($teacher_id);
+        $data['courses'] = $this->Course_Model->get_courses_with_stats_by_teacher($teacher_id);
         $data['page_title'] = 'My Courses';
         $data['success_message'] = lava_instance()->session->flashdata('success');
         $data['error_message'] = lava_instance()->session->flashdata('error');

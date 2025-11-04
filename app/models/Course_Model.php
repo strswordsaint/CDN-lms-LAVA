@@ -97,4 +97,9 @@ class Course_Model extends Model {
             return false;
         }
     }
+
+    public function count_all_courses() {
+        $this->db->table($this->table);
+        return $this->db->count();
+    }
 }

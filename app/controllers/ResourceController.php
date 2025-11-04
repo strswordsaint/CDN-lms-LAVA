@@ -113,8 +113,10 @@ class ResourceController extends Controller {
         }
 
         // 1. Delete file from server
-        if (file_exists($material['file_path'])) {
-            @unlink($material['file_path']);
+        // *** PERFORMANCE FIX HERE ***
+        $abs_path = ROOT_DIR . '/' . $material['file_path'];
+        if (file_exists($abs_path)) {
+            @unlink($abs_path);
         }
 
         // 2. Delete from database

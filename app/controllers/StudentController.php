@@ -140,6 +140,7 @@ class StudentController extends Controller {
     
     public function view_assignment($assignment_id) {
         $student_id = $this->session->userdata('user_id');
+        $this->call->model('Assignment_Attachment_Model'); // Load attachments model
 
         // 1. Get assignment details
         $assignment = $this->Assignment_Model->find($assignment_id); 
@@ -168,6 +169,9 @@ class StudentController extends Controller {
         // 4. Check if the student has already submitted
         $this->call->model('Assignment_Submission_Model'); 
         $data['submission'] = $this->Assignment_Submission_Model->check_existing_submission($student_id, $assignment_id);
+
+        // 5. Get assignment attachments
+        $data['assignment']['attachments'] = $this->Assignment_Attachment_Model->get_for_assignment($assignment_id);
 
         $data['assignment'] = $assignment;
         $data['page_title'] = 'Submit: ' . htmlspecialchars($assignment['title']);
@@ -269,7 +273,11 @@ class StudentController extends Controller {
             } else {
                 // If *any* file fails, stop, delete already uploaded files, and show error
                 foreach ($uploaded_file_data as $file) {
-                    @unlink($file['file_path']);
+                    // *** PERFORMANCE FIX HERE ***
+                    $abs_path = ROOT_DIR . '/' . $file['file_path'];
+                    if(file_exists($abs_path)) {
+                        @unlink($abs_path);
+                    }
                 }
                 $this->session->set_flashdata('error', 'File upload failed: ' . $this->Upload->get_errors()[0]);
                 redirect('/assignment/' . $assignment_id);
@@ -296,7 +304,11 @@ class StudentController extends Controller {
         } else {
             // Database insert failed, delete all uploaded files
             foreach ($uploaded_file_data as $file) {
-                @unlink($file['file_path']);
+                // *** PERFORMANCE FIX HERE ***
+                $abs_path = ROOT_DIR . '/' . $file['file_path'];
+                if(file_exists($abs_path)) {
+                    @unlink($abs_path);
+                }
             }
             $this->session->set_flashdata('error', 'Database error: Could not save submission.');
             redirect('/assignment/' . $assignment_id);
@@ -306,8 +318,37 @@ class StudentController extends Controller {
     public function view_all_assignments() {
         $student_id = $this->session->userdata('user_id');
         
-        // 1. Get all assignments using the new model function
-        $data['assignments'] = $this->Assignment_Model->get_all_assignments_for_student($student_id);
+        // 1. Get all assignments
+        $all_assignments = $this->Assignment_Model->get_all_assignments_for_student($student_id);
+        
+        // 2. Categorize them
+        $upcoming = [];
+        $past_due = [];
+        $completed = [];
+        
+        foreach ($all_assignments as $assignment) {
+            $is_submitted = $assignment['submission_id'] !== null;
+            $is_graded = $assignment['grade'] !== null;
+            $is_overdue = strtotime($assignment['due_date']) < time();
+
+            if ($is_graded) {
+                $completed[] = $assignment;
+            } else if ($is_submitted && $is_overdue) {
+                $completed[] = $assignment; // Submitted and past due counts as "completed"
+            } else if (!$is_submitted && $is_overdue) {
+                $past_due[] = $assignment;
+            } else {
+                // This covers:
+                // - Not submitted, not due
+                // - Submitted, not due
+                $upcoming[] = $assignment;
+            }
+        }
+
+        // 3. Pass to the view
+        $data['assignments_upcoming'] = $upcoming;
+        $data['assignments_past_due'] = $past_due;
+        $data['assignments_completed'] = $completed;
         
         $data['page_title'] = 'All Assignments';
         
@@ -339,6 +380,67 @@ class StudentController extends Controller {
         }
 
         redirect('/courses/my');
+    }
+
+    /**
+     * Unsubmit an assignment, if it has not been graded.
+     * Corresponds to route: POST /assignment/unsubmit/{sub_id}
+     */
+    public function unsubmit_assignment($submission_id) {
+        $student_id = $this->session->userdata('user_id');
+        $this->call->model('Assignment_Submission_Model');
+
+        // 1. Find the submission
+        $submission = $this->Assignment_Submission_Model->find($submission_id);
+
+        // 2. Security Checks
+        if (!$submission) {
+            $this->session->set_flashdata('error', 'Submission not found.');
+            redirect($_SERVER['HTTP_REFERER'] ?? '/my-assignments');
+            return;
+        }
+
+        if ($submission['student_id'] != $student_id) {
+            $this->session->set_flashdata('error', 'You do not have permission to modify this submission.');
+            redirect('/my-assignments');
+            return;
+        }
+
+        if ($submission['grade'] !== null) {
+            $this->session->set_flashdata('error', 'Cannot unsubmit a graded assignment.');
+            redirect('/assignment/' . $submission['assignment_id']);
+            return;
+        }
+
+        // 3. Delete Files from Server
+        // Submissions are stored as a JSON array
+        $files = json_decode($submission['file_path'], true);
+        if (is_array($files)) {
+            foreach ($files as $file) {
+                // *** PERFORMANCE FIX HERE ***
+                $file_abs_path = ROOT_DIR . '/' . $file['file_path'];
+                if (isset($file['file_path']) && file_exists($file_abs_path)) {
+                    @unlink($file_abs_path);
+                }
+            }
+        } else if (!empty($submission['file_path'])) {
+             // *** PERFORMANCE FIX HERE *** (Fallback for single, non-JSON paths)
+             $file_abs_path = ROOT_DIR . '/' . $submission['file_path'];
+             if (file_exists($file_abs_path)) {
+                @unlink($file_abs_path);
+             }
+        }
+
+
+        // 4. Delete from Database
+        if ($this->Assignment_Submission_Model->delete($submission_id)) {
+            $this->session->set_flashdata('success', 'Assignment successfully unsubmited. You may now resubmit.');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to remove submission from database.');
+        }
+
+        // 5. Redirect back to the assignment page
+        redirect('/assignment/' . $submission['assignment_id']);
     }
 
 }

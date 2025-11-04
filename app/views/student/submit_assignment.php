@@ -41,11 +41,21 @@
             <h3 class="text-lg font-semibold text-gray-700 mb-2">Instructions</h3>
             <p class="text-gray-600"><?php echo nl2br(htmlspecialchars($assignment['description'])); ?></p>
         <?php endif; ?>
-        <?php if (!empty($assignment['attachment_path'])): ?>
+        
+        <?php // --- FIX for multiple attachments ---
+        if (!empty($assignment['attachments'])): ?>
             <div class="mt-4">
-                <a href="<?php echo base_url() . $assignment['attachment_path']; ?>" download class="text-sm font-medium text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-paperclip mr-1"></i> Download Attached File
-                </a>
+                 <h4 class="text-sm font-medium text-gray-600 mb-1">Attached Files:</h4>
+                 <ul class="list-disc list-inside space-y-1">
+                    <?php foreach ($assignment['attachments'] as $file): ?>
+                        <li class="ml-4">
+                            <a href="<?php echo base_url() . $file['file_path']; ?>" download class="text-sm text-blue-600 hover:underline">
+                                <i class="fas fa-paperclip mr-1"></i>
+                                <?php echo htmlspecialchars($file['file_name']); ?>
+                            </a>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
             </div>
         <?php endif; ?>
     </div>
@@ -64,31 +74,52 @@
                 <?php echo htmlspecialchars($success_message); ?>
             </div>
         <?php endif; ?>
+        
         <?php if ($submission): // If already submitted ?>
             <div class="submitted-info">
                 <p class="font-semibold text-green-700"><i class="fas fa-check-circle mr-2"></i>Submitted On: <?php echo date('M d, Y @ g:i A', strtotime($submission['submitted_at'])); ?></p>
-                <p class="mt-2">
-                    <a href="<?php echo base_url() . $submission['file_path']; ?>" download class="text-sm font-medium text-blue-600 hover:text-blue-800">
-                        <i class="fas fa-download mr-1"></i> Download Your Submission
-                    </a>
-                </p>
+                
+                <?php // --- NEW: Handle JSON-encoded file paths ---
+                    $files = json_decode($submission['file_path'], true);
+                    
+                    if (is_array($files)) {
+                        echo '<p class="mt-2 font-medium text-sm text-gray-700">Submitted Files:</p><ul class="list-disc list-inside space-y-1 mt-1">';
+                        foreach($files as $file) {
+                            echo '<li class="ml-4"><a href="'.base_url() . $file['file_path'].'" download class="text-sm font-medium text-blue-600 hover:text-blue-800"><i class="fas fa-download mr-1"></i> '.htmlspecialchars($file['file_name']).'</a></li>';
+                        }
+                        echo '</ul>';
+                    } else if (!empty($submission['file_path'])) {
+                        // Fallback for old single-file string
+                        echo '<p class="mt-2"><a href="'.base_url() . $submission['file_path'].'" download class="text-sm font-medium text-blue-600 hover:text-blue-800"><i class="fas fa-download mr-1"></i> Download Your Submission</a></p>';
+                    }
+                // --- END NEW FILE LOGIC ---
+                ?>
+
                 <?php if ($submission['grade'] !== null): ?>
                     <p class="mt-2 font-semibold">Grade: <?php echo htmlspecialchars($submission['grade']); ?> / <?php echo htmlspecialchars($assignment['points']); ?></p>
-                <?php endif; ?>
-                 <?php if (!empty($submission['feedback'])): ?>
-                    <p class="mt-2 text-sm text-gray-700"><strong>Feedback:</strong> <?php echo nl2br(htmlspecialchars($submission['feedback'])); ?></p>
-                <?php endif; ?>
+                     <?php if (!empty($submission['feedback'])): ?>
+                        <p class="mt-2 text-sm text-gray-700"><strong>Feedback:</strong> <?php echo nl2br(htmlspecialchars($submission['feedback'])); ?></p>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p class="mt-4 text-sm text-gray-600">Your work is awaiting grading.</p>
+                    
+                    <form action="<?php echo site_url('/assignment/unsubmit/' . $submission['submission_id']); ?>" method="POST" class="mt-4" onsubmit="return confirm('Are you sure you want to unsubmit? This will delete your files and allow you to re-upload.');">
+                        <?php echo csrf_field(); ?>
+                        <button type="submit" class="text-sm text-red-600 hover:text-red-800 font-medium p-2 rounded-md bg-red-100 hover:bg-red-200 transition-colors">
+                            <i class="fas fa-times-circle mr-1"></i> Unsubmit Assignment
+                        </button>
+                    </form>
+                    <?php endif; ?>
             </div>
-            <p class="text-sm text-gray-500 mt-4">You have already submitted this assignment. If you need to resubmit, please contact your instructor.</p>
 
         <?php else: // If not yet submitted ?>
             <form action="<?php echo site_url('/assignment/' . $assignment['assignment_id'] . '/submit'); ?>" method="POST" enctype="multipart/form-data">
                 <?php echo csrf_field(); ?>
                 
                 <div class="mb-4">
-                    <label for="submission_file" class="block text-sm font-medium text-gray-700 mb-1">Select File to Upload <span class="text-red-500">*</span></label>
+                    <label for="submission_file" class="block text-sm font-medium text-gray-700 mb-1">Select File(s) to Upload <span class="text-red-500">*</span></label>
                     <input type="file" name="submission_files[]" id="submission_file" class="file-input" multiple required>
-                    <small class="text-xs text-gray-500">Allowed types: PDF, DOCX, DOC, TXT, JPG, PNG, ZIP, PPT, PPTX</small>
+                    <small class="text-xs text-gray-500">You can select multiple files. Allowed types: PDF, DOCX, DOC, TXT, JPG, PNG, ZIP, PPT, PPTX</small>
                 </div>
 
                 <div class="text-right">

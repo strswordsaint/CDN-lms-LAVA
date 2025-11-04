@@ -80,5 +80,37 @@ class Assignment_Submission_Model extends Model {
         $result = $this->db->raw($sql, [$teacher_id])->fetch(PDO::FETCH_ASSOC);
         return $result['ungraded_count'] ?? 0;
     }
+
+    public function get_all_ungraded_by_teacher($teacher_id) {
+        $sql = "
+            SELECT 
+                s.submission_id,
+                s.submitted_at,
+                a.assignment_id,
+                a.title AS assignment_title,
+                c.course_id,
+                c.title AS course_title,
+                u.first_name,
+                u.last_name
+            FROM 
+                assignment_submissions s
+            JOIN 
+                assignments a ON s.assignment_id = a.assignment_id
+            JOIN 
+                courses c ON a.course_id = c.course_id
+            JOIN
+                users u ON s.student_id = u.user_id
+            WHERE 
+                c.teacher_id = ?
+            AND 
+                s.grade IS NULL
+            ORDER BY
+                c.title ASC, 
+                a.due_date ASC, 
+                s.submitted_at ASC
+        ";
+        
+        return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 ?>

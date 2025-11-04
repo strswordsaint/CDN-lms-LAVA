@@ -24,7 +24,7 @@
         </div>
     </div>
 
-    <a href="<?php echo site_url('/courses'); ?>" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex items-center hover:shadow-lg transition-shadow">
+    <a href="<?php echo site_url('/submissions/ungraded'); ?>" class="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex items-center hover:shadow-lg transition-shadow">
         <i class="fas fa-exclamation-circle text-3xl <?php echo $stats['ungraded_count'] > 0 ? 'text-yellow-500' : 'text-gray-400'; ?> mr-4"></i>
         <div>
             <div class="text-sm text-gray-500">Ungraded Submissions</div>

@@ -61,10 +61,6 @@ $router->post('/auth/complete_google_register', 'AuthController::complete_google
 // --- Dashboards (Works) ---
 $router->get('/dashboard', 'DashboardController::index')->name('dashboard');
 
-
-// ===================================================================
-// === MOVED STUDENT COURSE ROUTES HERE TO FIX 404 ERROR ===
-// Specific routes MUST come before wildcard routes.
 /*
 | -------------------------------------------------------------------
 | STUDENT ROUTES
@@ -81,9 +77,10 @@ $router->get('/my-courses/{id}', 'StudentController::view_course')->where_number
 // View assignments for that course
 $router->get('/my-courses/{id}/assignments', 'StudentController::view_assignments')->where_number('id');
 // View a single assignment (and submit)
-// View a single assignment (and submit)
 $router->get('/assignment/{assign_id}', 'StudentController::view_assignment')->where_number('assign_id');
 $router->post('/assignment/{assign_id}/submit', 'StudentController::submit_assignment')->where_number('assign_id');
+$router->post('/assignment/unsubmit/{sub_id}', 'StudentController::unsubmit_assignment')->where_number('sub_id');
+
 // view assignments list
 $router->get('/my-assignments', 'StudentController::view_all_assignments')->name('student.assignments');
 // --- Student Quiz Taking (NEW) ---
@@ -136,6 +133,7 @@ $router->get('/assignments/all', 'AssignmentController::view_all')->name('assign
 // --- Assignment Grading (NEW) ---
 $router->get('/submissions/{sub_id}/grade', 'AssignmentController::show_grade_form')->where_number('sub_id');
 $router->post('/submissions/{sub_id}/grade', 'AssignmentController::process_grade')->where_number('sub_id');
+$router->get('/submissions/ungraded', 'AssignmentController::view_ungraded')->name('submissions.ungraded');
 
 // --- Quiz Management (NEW) ---
 $router->get('/courses/{id}/quizzes/create', 'QuizController::create')->where_number('id');
@@ -152,13 +150,6 @@ $router->post('/courses/{id}/discussions/store', 'DiscussionController::store')-
 $router->post('/courses/{id}/materials/upload', 'ResourceController::upload')->where_number('id');
 $router->post('/materials/delete/{id}', 'ResourceController::delete')->where_number('id');
 
-
-/*
-| -------------------------------------------------------------------
-| STUDENT ROUTES (Original Position - Now Moved)
-| -------------------------------------------------------------------
-*/
-
 // --- Enrollment Management (NEW - Teacher Side) ---
 $router->get('/courses/{id}/enrollments', 'CourseController::manage_enrollments')->where_number('id')->name('courses.enrollments');
 $router->post('/enrollments/approve/{enrollment_id}', 'CourseController::approve_enrollment')->where_number('enrollment_id')->name('enrollments.approve');
@@ -166,5 +157,14 @@ $router->post('/enrollments/reject/{enrollment_id}', 'CourseController::reject_e
 $router->post('/enrollments/remove/{enrollment_id}', 'CourseController::remove_enrollment')->where_number('enrollment_id')->name('enrollments.remove');
 $router->post('/courses/leave/{id}', 'StudentController::leave_course')->where_number('id')->name('courses.leave');
 
+/*
+| -------------------------------------------------------------------
+| ADMIN ROUTES
+| -------------------------------------------------------------------
+*/
+$router->get('/admin/users', 'AdminController::manage_users')->name('admin.users');
+$router->get('/admin/user/edit/{id}', 'AdminController::edit_user')->where_number('id')->name('admin.user.edit');
+$router->post('/admin/user/update/{id}', 'AdminController::update_user')->where_number('id')->name('admin.user.update');
+$router->post('/admin/user/delete/{id}', 'AdminController::delete_user')->where_number('id')->name('admin.user.delete');
 
 ?>

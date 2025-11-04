@@ -61,10 +61,6 @@ class AssignmentController extends Controller {
      * Store the new assignment in the database.
      * Corresponds to route: POST /courses/{id}/assignments/store
      */
-    /**
-     * Store the new assignment in the database.
-     * Corresponds to route: POST /courses/{id}/assignments/store
-     */
     public function store($course_id) {
         $teacher_id = $this->session->userdata('user_id');
 
@@ -185,7 +181,11 @@ class AssignmentController extends Controller {
             $this->Assignment_Model->delete($assignment_id);
             // Rollback: Delete any files that *did* upload
             foreach ($uploaded_file_paths as $path) {
-                @unlink($path);
+                // *** PERFORMANCE FIX HERE ***
+                $abs_path = ROOT_DIR . '/' . $path;
+                if(file_exists($abs_path)) {
+                    @unlink($abs_path);
+                }
             }
             // Redirect back with the error message
             redirect('/courses/' . $course_id . '/assignments/create');
@@ -308,14 +308,29 @@ class AssignmentController extends Controller {
         try {
             // Delete attachment files
             foreach ($attachments as $file) {
-                if ($file['file_path'] && file_exists($file['file_path'])) {
-                    @unlink($file['file_path']);
+                // *** PERFORMANCE FIX HERE ***
+                $abs_path = ROOT_DIR . '/' . $file['file_path'];
+                if ($file['file_path'] && file_exists($abs_path)) {
+                    @unlink($abs_path);
                 }
             }
             // Delete submission files
-            foreach ($submissions as $file) {
-                if ($file['file_path'] && file_exists($file['file_path'])) {
-                    @unlink($file['file_path']);
+            foreach ($submissions as $sub) {
+                // *** PERFORMANCE FIX HERE ***
+                // Handle both JSON and single-string paths
+                $files = json_decode($sub['file_path'], true);
+                if (is_array($files)) {
+                    foreach($files as $file) {
+                         $abs_path = ROOT_DIR . '/' . $file['file_path'];
+                         if (isset($file['file_path']) && file_exists($abs_path)) {
+                            @unlink($abs_path);
+                        }
+                    }
+                } else if (!empty($sub['file_path'])) {
+                    $abs_path = ROOT_DIR . '/' . $sub['file_path'];
+                    if(file_exists($abs_path)) {
+                        @unlink($abs_path);
+                    }
                 }
             }
         } catch (Exception $e) {
@@ -483,6 +498,37 @@ class AssignmentController extends Controller {
         $data['page_title'] = 'All Assignments';
         
         $this->call->view('/assignments/all_assignment', $data);
+    }
+
+    public function view_ungraded() {
+        $teacher_id = $this->session->userdata('user_id');
+        
+        // 1. Get the flat list of submissions from the model
+        $submissions = $this->Assignment_Submission_Model->get_all_ungraded_by_teacher($teacher_id);
+        
+        // 2. Group the flat list into an array by course title
+        $grouped_submissions = [];
+        foreach ($submissions as $sub) {
+            $course_title = $sub['course_title'];
+            
+            // If this is the first time we see this course, create its entry
+            if (!isset($grouped_submissions[$course_title])) {
+                $grouped_submissions[$course_title] = [
+                    'course_id' => $sub['course_id'],
+                    'submissions' => [] // Create an empty array for its submissions
+                ];
+            }
+            
+            // Add the current submission to its course's array
+            $grouped_submissions[$course_title]['submissions'][] = $sub;
+        }
+
+        // 3. Pass the grouped data to the new view
+        $data['grouped_submissions'] = $grouped_submissions;
+        $data['page_title'] = 'Ungraded Submissions';
+        
+        // 4. Call the new view file we are about to create
+        $this->call->view('/assignments/ungraded_list', $data);
     }
 }
 ?>
