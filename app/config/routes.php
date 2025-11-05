@@ -167,4 +167,13 @@ $router->get('/admin/user/edit/{id}', 'AdminController::edit_user')->where_numbe
 $router->post('/admin/user/update/{id}', 'AdminController::update_user')->where_number('id')->name('admin.user.update');
 $router->post('/admin/user/delete/{id}', 'AdminController::delete_user')->where_number('id')->name('admin.user.delete');
 
+$router->get('/admin/courses', 'AdminController::manage_courses')->name('admin.courses.index');
+$router->get('/admin/courses/view/{id}', 'AdminController::view_course')->where_number('id')->name('admin.courses.view');
+$router->get('/admin/courses/edit/{id}', 'AdminController::edit_course')->where_number('id')->name('admin.courses.edit');
+$router->post('/admin/courses/update/{id}', 'AdminController::update_course')->where_number('id')->name('admin.courses.update');
+$router->post('/admin/courses/remove_student/{id}', 'AdminController::remove_student_from_course')->where_number('id')->name('admin.courses.remove_student');
+
+$router->post('/admin/courses/delete/{id}', 'AdminController::delete_course')->where_number('id')->name('admin.courses.delete');
+
+
 ?>

@@ -14,17 +14,34 @@
     .delete-form {
         display: inline-block;
     }
+
+    /* Styles for the active and inactive tabs */
+    .tab-link {
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        color: #64748b; /* neutral-500 */
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+    }
+    .tab-link.active {
+        color: #1d4ed8; /* primary-700 */
+        border-bottom-color: #1d4ed8;
+    }
+    .tab-panel {
+        display: none; /* Hide all panels by default */
+    }
+    .tab-panel.active {
+        display: block; /* Show only the active panel */
+    }
 </style>
 
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Navigation -->
-     <a href="<?php echo site_url('/dashboard'); ?>" class="text-sm text-primary-600 hover:underline mb-4 inline-block">
+    <a href="<?php echo site_url('/dashboard'); ?>" class="text-sm text-primary-600 hover:underline mb-4 inline-block">
         <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard
     </a>
 
     <h1 class="text-2xl font-bold text-neutral-900 mb-6"><?php echo $page_title ?? 'Manage Users'; ?></h1>
 
-    <!-- Flash Messages -->
     <?php if (!empty($success_message)): ?>
         <div class="notice notice-success mb-4" role="alert" style="display:block;">
             <?php echo htmlspecialchars($success_message); ?>
@@ -35,79 +52,61 @@
             <?php echo htmlspecialchars($error_message); ?>
         </div>
     <?php endif; ?>
-    <!-- End Flash Messages -->
+    <div class="border-b border-neutral-300 mb-6">
+        <nav class="flex -mb-px">
+            <a class="tab-link active" data-tab="students">Students (<?php echo count($students); ?>)</a>
+            <a class="tab-link" data-tab="teachers">Teachers (<?php echo count($teachers); ?>)</a>
+            <a class="tab-link" data-tab="admins">Admins (<?php echo count($admins); ?>)</a>
+        </nav>
+    </div>
 
     <div class="card overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-neutral-200">
-                <thead class="bg-neutral-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                            Name
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                            Email
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                            Role
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                            Registered On
-                        </th>
-                         <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-neutral-200">
-                    <?php if (empty($all_users)): ?>
-                        <tr>
-                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-center text-neutral-500">
-                                No users found.
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($all_users as $user): ?>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">
-                                    <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
-                                    <?php echo htmlspecialchars($user['email']); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        <?php echo $user['role'] == 'admin' ? 'bg-primary-100 text-primary-800' : 
-                                             ($user['role'] == 'teacher' ? 'bg-success-100 text-success-800' : 
-                                             'bg-neutral-100 text-neutral-800'); ?>">
-                                        <?php echo htmlspecialchars(ucfirst($user['role'])); ?>
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
-                                    <?php echo date('M d, Y', strtotime($user['created_at'])); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
-                                    <a href="<?php echo site_url('/admin/user/edit/' . $user['user_id']); ?>" title="Edit User" class="btn btn-icon btn-primary">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    
-                                    <!-- Prevent admin from deleting themselves -->
-                                    <?php if ($user['user_id'] != lava_instance()->session->userdata('user_id')): ?>
-                                        <form action="<?php echo site_url('/admin/user/delete/' . $user['user_id']); ?>" method="POST" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
-                                            <?php echo csrf_field(); ?> 
-                                            <button type="submit" title="Delete User" class="btn btn-icon btn-danger">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+        <div id="tab-panel-students" class="tab-panel active">
+            <?php $users = $students; include 'app/views/admin/_user_table.php'; ?>
+        </div>
+        <div id="tab-panel-teachers" class="tab-panel">
+            <?php $users = $teachers; include 'app/views/admin/_user_table.php'; ?>
+        </div>
+        <div id="tab-panel-admins" class="tab-panel">
+            <?php $users = $admins; include 'app/views/admin/_user_table.php'; ?>
         </div>
     </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    var storageKey = 'adminUsersActiveTab';
+
+    // 1. On page load, check for a saved tab
+    var savedTab = sessionStorage.getItem(storageKey);
+    if (savedTab) {
+        // Remove default active state
+        $('.tab-link').removeClass('active');
+        $('.tab-panel').removeClass('active');
+        
+        // Apply the saved active state
+        $('.tab-link[data-tab="' + savedTab + '"]').addClass('active');
+        $('#tab-panel-' + savedTab).addClass('active');
+    }
+
+    // 2. On tab click, save the new tab
+    $('.tab-link').on('click', function(e) {
+        e.preventDefault();
+        
+        var tab = $(this).data('tab');
+        
+        // Save the clicked tab to session storage
+        sessionStorage.setItem(storageKey, tab);
+        
+        // Update tab link active state
+        $('.tab-link').removeClass('active');
+        $(this).addClass('active');
+        
+        // Show/hide tab panels
+        $('.tab-panel').removeClass('active');
+        $('#tab-panel-' + tab).addClass('active');
+    });
+});
+</script>
 
 <?php include 'app/views/layouts/footer.php'; ?>

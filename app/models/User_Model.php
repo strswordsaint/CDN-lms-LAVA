@@ -3,12 +3,11 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 /**
  * Model: User_Model
- * 
- * Automatically generated via CLI.
+ * * Automatically generated via CLI.
  */
 class User_Model extends Model {
     protected $table = 'users';
-    protected $primary_key = 'id';
+    protected $primary_key = 'user_id'; // Change this to 'user_id' if that is your primary key
 
      protected $fillable = [
         'first_name',
@@ -29,30 +28,56 @@ class User_Model extends Model {
      * @return object|false
      */
     public function findUserByEmail($email) {
-        $this->db->query("SELECT * FROM {$this->table} WHERE email = :email");
-        $this->db->bind(':email', $email);
-        
-        $row = $this->db->single();
-
-        return ($this->db->rowCount() > 0) ? $row : false;
+        // Use the filter() method which is safer
+        return $this->filter(['email' => $email])->get();
     }
 
     /**
-     * Create a new user
+     * Create a new user (Note: this method returns void)
      * @param array $data
-     * @return bool
      */
     public function create($data) {
-        $this->db->query("INSERT INTO {$this->table} (username, email, password, role) 
-                         VALUES (:username, :email, :password, :role)");
-        
-        // Bind values
-        $this->db->bind(':username', $data['username']);
-        $this->db->bind(':email', $data['email']);
-        $this->db->bind(':password', $data['password']);
-        $this->db->bind(':role', $data['role']);
+        // This uses the base Model's insert method
+        $this->insert($data);
+    }
 
-        // Execute
-        return $this->db->execute();
+    /**
+     * Get all users from the database.
+     * @return array
+     */
+    public function get_all_users() {
+        // Use filter() with an empty array to get all
+        return $this->filter([])
+                    ->order_by('created_at', 'DESC')
+                    ->get_all();
+    }
+
+    /**
+     * Count all users in the table.
+     * @return int
+     */
+    public function count_all_users() {
+        // Use a raw query to bypass the model's 'dirty' query builder state
+        $sql = "SELECT COUNT(*) as total FROM " . $this->table;
+        $result = $this->db->raw($sql)->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
+    /**
+     * Count users by a specific role.
+     * @param string $role (e.g., 'student', 'teacher')
+     * @return int
+     */
+    public function count_by_role($role) {
+        // Use a raw query to bypass the model's 'dirty' query builder state
+        $sql = "SELECT COUNT(*) as total FROM " . $this->table . " WHERE role = ?";
+        $result = $this->db->raw($sql, [$role])->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
+
+    public function get_users_by_role($role) {
+        return $this->filter(['role' => $role])
+                    ->order_by('created_at', 'DESC')
+                    ->get_all();
     }
 }
+?>

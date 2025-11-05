@@ -168,6 +168,7 @@
         $pending_assignment_count = 0;
         $ungraded_count = 0;
         $pending_enrollment_count = 0;
+        $admin_user_management_active = false; // Initialize
 
         if ($is_logged_in) {
             $user_id = $LAVA->session->userdata('user_id');
@@ -218,96 +219,111 @@
         <aside id="app-sidebar" class="w-20 bg-white border-r border-neutral-200 p-3 flex-shrink-0 overflow-y-auto z-10">
             <nav>
                 <ul class="space-y-1">
-                    <li>
-                        <a href="<?php echo site_url('/dashboard'); ?>" 
-                           title="Dashboard"
-                           class="sidebar-nav-link <?php echo ($current_segment == 'dashboard') ? 'active' : ''; ?>">
-                           <i class="fas fa-home"></i>
-                           <span>Dashboard</span>
-                        </a>
-                    </li>
                     
-                    <?php if ($user_role == 'teacher' || $user_role == 'admin'): ?>
-                    <li>
-                        <a href="<?php echo site_url('/courses'); ?>" 
-                           title="Manage Courses"
-                           class="sidebar-nav-link <?php echo $is_courses_section ? 'active' : ''; ?>">
-                           
-                           <?php if ($pending_enrollment_count > 0): ?>
-                                <span class="notification-dot"></span>
-                           <?php endif; ?>
-                           
-                           <i class="fas fa-book-open"></i>
-                           <span>Courses</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo site_url('/assignments/all'); ?>" 
-                           title="Assignments"
-                           class="sidebar-nav-link <?php echo $is_assignments_section ? 'active' : ''; ?>">
-                           
-                           <?php if ($ungraded_count > 0): ?>
-                                <span class="notification-dot"></span>
-                           <?php endif; ?>
-                           
-                           <i class="fas fa-tasks"></i>
-                           <span>Assignments</span>
-                        </a>
-                    </li>
-                    <?php endif; ?>
+                    <?php if ($user_role == 'admin'): ?>
+                        <?php
+                            // === NEW ADMIN-SPECIFIC ACTIVE LOGIC ===
+                            $is_admin_dashboard_active = ($current_segment == 'dashboard');
+                            $is_admin_courses_active = ($current_segment == 'admin' && segment(3) == 'courses');
+                            $is_admin_users_active = ($current_segment == 'admin' && segment(3) == 'users');
+                        ?>
+                        <li>
+                            <a href="<?php echo site_url('/dashboard'); ?>" 
+                               title="Dashboard"
+                               class="sidebar-nav-link <?php echo $is_admin_dashboard_active ? 'active' : ''; ?>">
+                               <i class="fas fa-home"></i>
+                               <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo site_url('/admin/courses'); ?>" 
+                               title="Manage Courses"
+                               class="sidebar-nav-link <?php echo $is_admin_courses_active ? 'active' : ''; ?>">
+                               <i class="fas fa-book-open"></i>
+                               <span>Courses</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo site_url('/admin/users'); ?>" 
+                               title="Manage Users"
+                               class="sidebar-nav-link <?php echo $is_admin_users_active ? 'active' : ''; ?>">
+                               <i class="fas fa-user-cog"></i>
+                               <span>Users</span>
+                            </a>
+                        </li>
+                        
+                    <?php elseif ($user_role == 'teacher'): ?>
+                        <li>
+                            <a href="<?php echo site_url('/dashboard'); ?>" 
+                               title="Dashboard"
+                               class="sidebar-nav-link <?php echo ($current_segment == 'dashboard') ? 'active' : ''; ?>">
+                               <i class="fas fa-home"></i>
+                               <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo site_url('/courses'); ?>" 
+                               title="Manage Courses"
+                               class="sidebar-nav-link <?php echo $is_courses_section ? 'active' : ''; ?>">
+                               
+                               <?php if ($pending_enrollment_count > 0): ?>
+                                    <span class="notification-dot"></span>
+                               <?php endif; ?>
+                               
+                               <i class="fas fa-book-open"></i>
+                               <span>Courses</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo site_url('/assignments/all'); ?>" 
+                               title="Assignments"
+                               class="sidebar-nav-link <?php echo $is_assignments_section ? 'active' : ''; ?>">
+                               
+                               <?php if ($ungraded_count > 0): ?>
+                                    <span class="notification-dot"></span>
+                               <?php endif; ?>
+                               
+                               <i class="fas fa-tasks"></i>
+                               <span>Assignments</span>
+                            </a>
+                        </li>
 
-                    <?php if ($user_role == 'student'): ?>
-                    <li>
-                        <a href="<?php echo site_url('/courses/my'); ?>" 
-                           title="My Courses"
-                           class="sidebar-nav-link <?php echo $is_my_courses_active ? 'active' : ''; ?>">
-                           <i class="fas fa-chalkboard"></i>
-                           <span>My Courses</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?php echo site_url('/my-assignments'); ?>" 
-                           title="View All Assignments"
-                           class="sidebar-nav-link <?php echo $is_assignments_active ? 'active' : ''; ?>">
-                           
-                           <?php if ($pending_assignment_count > 0): ?>
-                                <span class="notification-dot"></span>
-                           <?php endif; ?>
-                           
-                           <i class="fas fa-tasks"></i>
-                           <span>Assignments</span>
-                        </a>
-                    </li>
+                    <?php elseif ($user_role == 'student'): ?>
+                        <li>
+                            <a href="<?php echo site_url('/dashboard'); ?>" 
+                               title="Dashboard"
+                               class="sidebar-nav-link <?php echo ($current_segment == 'dashboard') ? 'active' : ''; ?>">
+                               <i class="fas fa-home"></i>
+                               <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo site_url('/courses/my'); ?>" 
+                               title="My Courses"
+                               class="sidebar-nav-link <?php echo $is_my_courses_active ? 'active' : ''; ?>">
+                               <i class="fas fa-chalkboard"></i>
+                               <span>My Courses</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo site_url('/my-assignments'); ?>" 
+                               title="View All Assignments"
+                               class="sidebar-nav-link <?php echo $is_assignments_active ? 'active' : ''; ?>">
+                               
+                               <?php if ($pending_assignment_count > 0): ?>
+                                    <span class="notification-dot"></span>
+                               <?php endif; ?>
+                               
+                               <i class="fas fa-tasks"></i>
+                               <span>Assignments</span>
+                            </a>
+                        </li>
                     <?php endif; ?>
-
                 </ul>
-            </nav>
-        </aside>
-        <?php endif; ?>
+            </nav> <?php // ?>
+        </aside> <?php // ?>
+        <?php endif; ?> <?php // ?>
 
+        <?php // ?>
         <main class="flex-1 overflow-y-auto">
-            
-            <div class="absolute top-4 right-4 z-50 max-w-sm w-full" style="top: 1rem; right: 1rem;">
-                <?php $success_message = $LAVA->session->flashdata('success'); ?>
-                <div class="notice notice-success mb-4" role="alert" <?php echo empty($success_message) ? '' : 'style="display:block;"'; ?>>
-                    <?php echo htmlspecialchars($success_message ?? ''); ?>
-                </div>
-
-                <?php $error_message = $LAVA->session->flashdata('error'); ?>
-                <div class="notice notice-error mb-4" role="alert" <?php echo empty($error_message) ? '' : 'style="display:block;"'; ?>>
-                    <?php echo htmlspecialchars($error_message ?? ''); ?>
-                </div>
-
-                <?php $validation_errors = $LAVA->session->flashdata('validation_errors'); ?>
-                <?php if (!empty($validation_errors)): ?>
-                    <div class="notice notice-error mb-4" role="alert" style="display:block;">
-                        <p class="font-bold mb-1">Please fix the following errors:</p>
-                        <ul class="list-disc list-inside">
-                            <?php foreach ($validation_errors as $error): ?>
-                                <li><?php echo htmlspecialchars($error); ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-            </div>
-<div class="<?php echo $is_logged_in ? 'p-4 sm:p-6 lg:p-8' : 'h-full'; ?>">
+            <div class="<?php echo $is_logged_in ? 'p-4 sm:p-6 lg:p-8' : 'h-full'; ?>">

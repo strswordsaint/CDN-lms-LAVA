@@ -43,10 +43,25 @@ class DashboardController extends Controller {
 
         switch ($role) {
             case 'admin':
+                // === THIS IS THE FIX ===
+                // Load the models needed for stats
+                $this->call->model('User_Model');
+                $this->call->model('Course_Model');
+
+                // Fetch the real stats from the models
+                $data['stats'] = [
+                    'total_users' => $this->User_Model->count_all_users(),
+                    'total_students' => $this->User_Model->count_by_role('student'),
+                    'total_teachers' => $this->User_Model->count_by_role('teacher'),
+                    'total_courses' => $this->Course_Model->count_all_courses()
+                ];
+                // === END FIX ===
+
                 $this->call->view('/dashboards/admin', $data);
                 break;
             
             case 'teacher':
+                // (Teacher dashboard logic remains the same)
                 $teacher_id = $this->session->userdata('user_id');
                 $courses_with_stats = $this->Course_Model->get_courses_with_stats_by_teacher($teacher_id);
                 $ungraded_count = $this->Assignment_Submission_Model->count_ungraded_for_teacher($teacher_id);
@@ -66,28 +81,19 @@ class DashboardController extends Controller {
 
             case 'student':
             default:
-                // === NEW LOGIC FOR STUDENT DASHBOARD ===
+                // (Student dashboard logic remains the same)
                 $student_id = $this->session->userdata('user_id');
-
-                // 1. Get courses (for count)
                 $courses = $this->Enrollment_Model->get_student_courses($student_id, 'approved');
-                
-                // 2. Get pending assignments count
                 $pending_count = $this->Assignment_Model->count_pending_for_student($student_id);
-
-                // 3. Get upcoming assignments
                 $upcoming = $this->Assignment_Model->get_upcoming_for_student($student_id, 5);
 
-                // Add to data array
                 $data['stats'] = [
                     'joined_courses' => count($courses),
                     'pending_assignments' => $pending_count,
-                    // You can add more stats here, e.g., 'completed_assignments'
                 ];
                 $data['upcoming_assignments'] = $upcoming;
 
                 $this->call->view('/dashboards/student', $data);
-                // === END NEW LOGIC ===
                 break;
         }
     }

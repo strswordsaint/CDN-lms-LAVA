@@ -102,4 +102,22 @@ class Course_Model extends Model {
         $this->db->table($this->table);
         return $this->db->count();
     }
+
+    public function get_all_courses_with_teacher() {
+        $sql = "
+            SELECT 
+                c.*, 
+                u.first_name, 
+                u.last_name,
+                (SELECT COUNT(*) FROM enrollments e 
+                 WHERE e.course_id = c.course_id AND e.status = 'approved') as student_count
+            FROM 
+                {$this->table} c
+            LEFT JOIN 
+                users u ON c.teacher_id = u.user_id
+            ORDER BY
+                c.created_at DESC
+        ";
+        return $this->db->raw($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
