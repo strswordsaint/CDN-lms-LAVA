@@ -75,12 +75,23 @@ class AuthController extends Controller {
             $user = $this->User_Model->filter(['email' => $email])->get();
 
             if ($user && password_verify($password, $user['password'])) {
+
+                if ($user['status'] != 'approved') {
+                    lava_instance()->session->set_flashdata('error', 'Your account is not approved or is inactive.');
+                    redirect('/auth/login');
+                    return; // Stop execution
+                }
+
+                // --- THIS IS THE FIX ---
                 $session_data = [
                     'user_id'    => $user['user_id'],
                     'first_name' => $user['first_name'],
-                    'email'      => $user['email'],
+                    'last_name'  => $user['last_name'],  // <-- ADDED
+                    'email'      => $user['email'],      // <-- ADDED
                     'role'       => $user['role'],
                 ];
+                // --- END FIX ---
+
                 lava_instance()->session->set_userdata($session_data);
                 lava_instance()->session->set_flashdata('success', 'Login successful!');
                 
@@ -143,6 +154,7 @@ class AuthController extends Controller {
              lava_instance()->session->set_flashdata('validation_errors', $combined_errors);
              redirect('/auth/register');
         } else {
+            $role = $this->io->post('role'); // Get the role
             $hashed_password = password_hash($this->io->post('password'), PASSWORD_DEFAULT); 
 
             $data = [
@@ -150,7 +162,8 @@ class AuthController extends Controller {
                 'last_name'  => $this->io->post('last_name'),  
                 'email'      => $email,
                 'password'   => $hashed_password,
-                'role'       => $this->io->post('role'),       
+                'role'       => $role,       
+                'status'     => ($role === 'teacher') ? 'pending' : 'approved' // Set status
             ];
 
             $user_id = $this->User_Model->insert($data);
@@ -170,9 +183,6 @@ class AuthController extends Controller {
         redirect('/auth/login');
     }
 
-    /**
-     * Initiates the Google Login flow by redirecting the user.
-     */
     public function google_login() {
         if ($this->session->has_userdata('user_id')) {
             redirect('/dashboard');
@@ -183,9 +193,6 @@ class AuthController extends Controller {
         exit;
     }
 
-    /**
-     * Handles the callback from Google after user authorization.
-     */
     public function google_callback() {
         if ($this->session->has_userdata('user_id')) {
             redirect('/dashboard');
@@ -208,40 +215,43 @@ class AuthController extends Controller {
             $email =  $google_account_info->email;
             $google_id = $google_account_info->id;
             
-            // --- User Handling Logic ---
             $user = $this->User_Model->filter(['email' => $email])->get();
 
             if ($user) {
                 // User exists, log them in
+                
+                if ($user['status'] != 'approved') {
+                    $this->session->set_flashdata('error', 'Your account is not approved or is inactive.');
+                    redirect('/auth/login');
+                    return; // Stop execution
+                }
+
+                // --- THIS IS THE FIX ---
                 $session_data = [
                     'user_id'    => $user['user_id'], 
                     'first_name' => $user['first_name'],
-                    'email'      => $user['email'],
+                    'last_name'  => $user['last_name'], // <-- ADDED
+                    'email'      => $user['email'],      // <-- ADDED
                     'role'       => $user['role'],
                 ];
+                // --- END FIX ---
+                
                 $this->session->set_userdata($session_data);
                 $this->session->set_flashdata('success', 'Logged in successfully via Google!');
                 redirect('/dashboard');
                 exit;
 
             } else {
-                // === THIS IS THE MODIFIED PART ===
-                // User DOES NOT exist - Store Google info temporarily and ask for role
                 $google_data = [
                      'first_name' => $google_account_info->givenName ?? '',
                      'last_name' => $google_account_info->familyName ?? '',
                      'email' => $email,
                      'google_id' => $google_id
                  ];
-                 // Store this data in the session's flashdata
                  $this->session->set_flashdata('google_signup_data', $google_data);
-
-                 // Redirect to a new page where they choose their role
                  redirect('/auth/choose_role');
                  exit;
-                 // === END OF MODIFIED PART ===
             }
-            // --- End User Handling Logic ---
 
         } else {
             $this->session->set_flashdata('error', 'Invalid Google Sign-In request.');
@@ -250,15 +260,9 @@ class AuthController extends Controller {
         }
     }
 
-    // === NEW METHOD 1 ===
-    /**
-     * Shows the role selection page for new Google sign-ups.
-     */
     public function choose_role() {
-        // Retrieve the temporary Google data
         $google_data = $this->session->flashdata('google_signup_data');
 
-        // If no data (e.g., direct access), redirect to login
         if (!$google_data) {
             $this->session->set_flashdata('error', 'Invalid request. Please log in or register.');
             redirect('/auth/login');
@@ -266,31 +270,24 @@ class AuthController extends Controller {
         }
         $this->session->keep_flashdata('google_signup_data');
 
-        $data['google_data'] = $google_data; // Pass data to the view
-        $data['error_message'] = $this->session->flashdata('error'); // Pass potential errors
-        $this->call->view('/auth/choose_role', $data); // We will create this view next
+        $data['google_data'] = $google_data;
+        $data['error_message'] = $this->session->flashdata('error');
+        $this->call->view('/auth/choose_role', $data);
     }
 
-    // === NEW METHOD 2 ===
-    /**
-     * Processes the role selection and completes registration.
-     */
     public function complete_google_register() {
         $google_data = $this->session->flashdata('google_signup_data');
-        $selected_role = $this->io->post('role'); // Get role from the form
+        $selected_role = $this->io->post('role');
 
-        // Basic validation
         if (!$google_data || !$selected_role || !in_array($selected_role, ['student', 'teacher'])) {
-            // If data is missing or role invalid, try sending them back with error
             $this->session->set_flashdata('error', 'Invalid role selection or session expired. Please try signing in again.');
-            if ($google_data) { // Try to preserve data if possible
+            if ($google_data) {
                $this->session->set_flashdata('google_signup_data', $google_data);
             }
-            redirect('/auth/choose_role'); // Redirect back to role choice
+            redirect('/auth/choose_role');
             exit;
         }
 
-        // Check again if email exists
         $user_exists = $this->User_Model->filter(['email' => $google_data['email']])->get();
         if ($user_exists) {
            $this->session->set_flashdata('error', 'This email address was just registered. Please log in.');
@@ -298,26 +295,29 @@ class AuthController extends Controller {
            exit;
         }
 
-        // Create the user with the selected role
         $newUser = [
             'first_name' => $google_data['first_name'],
             'last_name'  => $google_data['last_name'],
             'email'      => $google_data['email'],
-            'password'   => password_hash(random_bytes(16), PASSWORD_DEFAULT), // Random secure password
-            'role'       => $selected_role, // Use the selected role
-            'google_id'  => $google_data['google_id']
+            'password'   => password_hash(random_bytes(16), PASSWORD_DEFAULT),
+            'role'       => $selected_role,
+            'google_id'  => $google_data['google_id'],
+            'status'     => ($selected_role === 'teacher') ? 'pending' : 'approved'
         ];
 
         $userId = $this->User_Model->insert($newUser);
 
         if($userId) {
-            // Log the new user in
+            // --- THIS IS THE FIX ---
             $session_data = [
                 'user_id'    => $userId,
                 'first_name' => $newUser['first_name'],
-                'email'      => $newUser['email'],
+                'last_name'  => $newUser['last_name'], // <-- ADDED
+                'email'      => $newUser['email'],      // <-- ADDED
                 'role'       => $newUser['role'],
             ];
+            // --- END FIX ---
+
             $this->session->set_userdata($session_data);
             $this->session->set_flashdata('success', 'Account created successfully as a ' . $selected_role . '!');
             redirect('/dashboard');

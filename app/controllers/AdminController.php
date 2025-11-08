@@ -24,6 +24,9 @@ class AdminController extends Controller {
         $this->call->model('Assignment_Submission_Model');
         $this->call->model('Resource_Model');
         
+        // --- ADD THIS LIBRARY ---
+        $this->call->library('form_validation'); 
+        
         // Secure this entire controller
         $this->check_auth_admin();
     }
@@ -54,11 +57,112 @@ class AdminController extends Controller {
         $data['teachers'] = $this->User_Model->get_users_by_role('teacher');
         $data['students'] = $this->User_Model->get_users_by_role('student');
         
+        // --- ADDED ---
+        $data['pending_teachers'] = $this->User_Model->get_pending_teachers();
+        
         $data['page_title'] = 'Manage Users';
         $data['success_message'] = $this->session->flashdata('success');
         $data['error_message'] = $this->session->flashdata('error');
         
         $this->call->view('/admin/manage_users', $data);
+    }
+
+    // --- NEW: shows the create user form ---
+    public function create_user() {
+        $data['page_title'] = 'Create New User';
+        $data['validation_errors'] = $this->session->flashdata('validation_errors');
+        $data['error_message'] = $this->session->flashdata('error');
+        $this->call->view('/admin/create_user', $data);
+    }
+
+    // --- NEW: handles the create user form post ---
+    public function store_user() {
+        // Use the same validation rules as the public registration
+        $this->form_validation
+            ->name('first_name')
+                ->required('First name is required.')
+                ->alpha_space('First name can only contain letters and spaces.')
+            ->name('last_name')
+                ->required('Last name is required.')
+                ->alpha_space('Last name can only contain letters and spaces.')
+            ->name('email')
+                ->required('Email is required.')
+                ->valid_email('Please enter a valid email address.')
+            ->name('password')
+                ->required('Password is required.')
+                ->min_length(8, 'Password must be at least 8 characters long.')
+                ->custom_pattern('(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W).*', 'Password must include uppercase, lowercase, number, and special character.')
+            ->name('role')
+                ->required('Role selection is required.')
+                ->in_list('student,teacher,admin', 'Invalid role selected.');
+
+        $email = $this->io->post('email');
+        $user_exists = $this->User_Model->filter(['email' => $email])->get();
+        $validation_ran = $this->form_validation->run();
+
+        // 1. Check for existing email (same as AuthController)
+        if ($user_exists) {
+           $errors = $this->session->flashdata('validation_errors') ?: ($this->form_validation->get_errors() ?: []);
+           if (!in_array('This email address is already registered.', $errors)) {
+                $errors[] = 'This email address is already registered.';
+           }
+           $this->session->set_flashdata('validation_errors', array_unique($errors));
+           redirect('/admin/user/create');
+           return; 
+        }
+
+        // 2. Check for validation errors
+        if ($validation_ran == FALSE) {
+             $errors = $this->session->flashdata('validation_errors') ?: [];
+             $form_errors = $this->form_validation->get_errors() ?: [];
+             $combined_errors = array_unique(array_merge($errors, $form_errors));
+             $this->session->set_flashdata('validation_errors', $combined_errors);
+             redirect('/admin/user/create');
+             
+        } else {
+            // 3. Validation passed, create the user
+            $role = $this->io->post('role');
+            $hashed_password = password_hash($this->io->post('password'), PASSWORD_DEFAULT); 
+
+            // **IMPORTANT**: Set status based on role
+            // Admins and Students are approved instantly.
+            // Teachers go to the pending queue.
+            $status = ($role === 'teacher') ? 'pending' : 'approved';
+
+            $data = [
+                'first_name' => $this->io->post('first_name'), 
+                'last_name'  => $this->io->post('last_name'),  
+                'email'      => $email,
+                'password'   => $hashed_password,
+                'role'       => $role,       
+                'status'     => $status
+            ];
+
+            $user_id = $this->User_Model->insert($data);
+
+            if ($user_id) {
+                 $this->session->set_flashdata('success', 'User account created successfully.');
+                 redirect('/admin/users');
+            } else {
+                 $this->session->set_flashdata('error', 'Registration failed. Please try again.');
+                 redirect('/admin/user/create');
+            }
+        }
+    }
+
+    /**
+     * Approve a pending teacher account.
+     */
+    public function approve_teacher($user_id) {
+        // Simple update
+        $updated = $this->User_Model->update($user_id, ['status' => 'approved']);
+        
+        if ($updated) {
+            $this->session->set_flashdata('success', 'Teacher account approved successfully.');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to approve teacher.');
+        }
+        redirect('/admin/users');
     }
 
     /**

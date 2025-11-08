@@ -60,6 +60,10 @@ $router->post('/auth/complete_google_register', 'AuthController::complete_google
 
 // --- Dashboards (Works) ---
 $router->get('/dashboard', 'DashboardController::index')->name('dashboard');
+//profile
+$router->get('/profile', 'ProfileController::index')->name('profile.index');
+$router->post('/profile/update_details', 'ProfileController::update_details')->name('profile.update_details');
+$router->post('/profile/update_password', 'ProfileController::update_password')->name('profile.update_password');
 
 /*
 | -------------------------------------------------------------------
@@ -162,10 +166,14 @@ $router->post('/courses/leave/{id}', 'StudentController::leave_course')->where_n
 | ADMIN ROUTES
 | -------------------------------------------------------------------
 */
+$router->get('/admin/user/create', 'AdminController::create_user')->name('admin.user.create');
+$router->post('/admin/user/store', 'AdminController::store_user')->name('admin.user.store');
 $router->get('/admin/users', 'AdminController::manage_users')->name('admin.users');
 $router->get('/admin/user/edit/{id}', 'AdminController::edit_user')->where_number('id')->name('admin.user.edit');
 $router->post('/admin/user/update/{id}', 'AdminController::update_user')->where_number('id')->name('admin.user.update');
 $router->post('/admin/user/delete/{id}', 'AdminController::delete_user')->where_number('id')->name('admin.user.delete');
+
+$router->post('/admin/teacher/approve/{id}', 'AdminController::approve_teacher')->where_number('id')->name('admin.teacher.approve');
 
 $router->get('/admin/courses', 'AdminController::manage_courses')->name('admin.courses.index');
 $router->get('/admin/courses/view/{id}', 'AdminController::view_course')->where_number('id')->name('admin.courses.view');

@@ -54,18 +54,21 @@
                 '50': '#f0fdf4',
                 '100': '#dcfce7',
                 '500': '#22c55e',
+                '600': '#16a34a', // Added for buttons
                 '700': '#15803d',
               },
               'error': {
                 '50': '#fef2f2',
                 '100': '#fee2e2',
                 '500': '#ef4444',
+                '600': '#dc2626', // Added for buttons
                 '700': '#b91c1c',
               },
               'warning': {
                 '50': '#fffbeb',
                 '100': '#fef3c7',
                 '500': '#f59e0b',
+                '600': '#d97706', // Added for buttons
                 '700': '#b45309',
               },
             }
@@ -82,17 +85,25 @@
         .notice-success { background-color: #f0fdf4; color: #15803d; border-color: #a3e6b6; }
         .notice-error { background-color: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
         
-        /* Layout Styles (Updated) */
+        /* === CSS STICKY FOOTER FIX (START) === */
         html, body { height: 100%; overflow: hidden; }
-        /* NEW: Set default font and background for the whole app */
         body { 
             background-color: #f1f5f9; /* neutral-100 */
             color: #334155; /* neutral-700 */
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* This is the critical line */
         }
-        .main-layout { height: calc(100vh - 52px); }
+        
+        .main-layout { 
+            flex: 1; /* This makes the content area grow */
+            min-height: 0; /* Fix for flexbox overflow */
+        }
+        /* === CSS STICKY FOOTER FIX (END) === */
         
         /* Sidebar Styles (Updated) */
         .sidebar-nav-link {
@@ -106,7 +117,6 @@
             border-radius: 6px;
             transition: background-color 0.2s, color 0.2s;
             white-space: nowrap; text-align: center;
-            /* NEW: Added for positioning the dot */
             position: relative; 
         }
         .sidebar-nav-link:hover { 
@@ -123,22 +133,76 @@
             font-size: 1.5rem; /* 24px */
         }
         
-        /* === UPDATED: CSS For Notification Dot === */
         .notification-dot {
             position: absolute;
-            top: 0.75rem;    /* 12px (Moved up) */
-            right: 0.75rem;  /* 12px (Moved left) */
-            width: 0.5rem;   /* 8px (Made smaller) */
-            height: 0.5rem;  /* 8px (Made smaller) */
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 0.5rem;
+            height: 0.5rem;
             background-color: #ef4444; /* error-500 */
             border-radius: 9999px;
             border: 2px solid #ffffff; /* Matches sidebar bg */
         }
-        /* Adjust dot border for active link */
         .sidebar-nav-link.active .notification-dot {
             border-color: #dbeafe; /* primary-100 */
         }
 
+        /* === NEW: Form Styles === */
+        .form-input, .form-textarea, .form-select {
+            @apply block w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm;
+            @apply placeholder-neutral-400 text-neutral-900;
+            @apply focus:outline-none focus:ring-primary-500 focus:border-primary-500;
+        }
+        .form-input-file {
+            @apply block w-full text-sm text-neutral-500;
+            @apply file:mr-4 file:py-2 file:px-4;
+            @apply file:rounded-md file:border-0 file:text-sm file:font-semibold;
+            @apply file:bg-primary-50 file:text-primary-700;
+            @apply file:hover:bg-primary-100 file:cursor-pointer;
+        }
+
+        /* === NEW: Button Styles === */
+        .btn {
+            @apply inline-flex items-center justify-center px-4 py-2 border border-transparent;
+            @apply text-sm font-medium rounded-md shadow-sm;
+            @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+            @apply transition-colors duration-200;
+        }
+        .btn-primary {
+            @apply text-white bg-primary-700 hover:bg-primary-800 focus:ring-primary-500;
+        }
+        .btn-secondary {
+            @apply text-neutral-700 bg-white border-neutral-300 hover:bg-neutral-50 focus:ring-primary-500;
+        }
+        .btn-success {
+            @apply text-white bg-success-600 hover:bg-success-700 focus:ring-success-500;
+        }
+        .btn-danger {
+            @apply text-white bg-error-600 hover:bg-error-700 focus:ring-error-500;
+        }
+        .btn-danger-sm {
+            @apply btn bg-error-50 text-error-600 hover:bg-error-100 focus:ring-error-500;
+            @apply px-2 py-1 text-xs;
+        }
+
+        /* === NEW: Card Style === */
+        .card {
+            @apply bg-white shadow-md rounded-lg border border-neutral-200;
+        }
+        
+        /* === NEW PROFILE DROPDOWN STYLES === */
+        .profile-dropdown {
+            @apply absolute z-40 right-0 top-12 mt-2 w-80;
+            @apply bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5;
+        }
+        .profile-tab {
+            @apply px-3 py-2 text-sm font-medium text-neutral-500;
+            @apply border-b-2 border-transparent;
+            @apply hover:text-neutral-700 hover:border-neutral-300;
+        }
+        .profile-tab.active {
+            @apply text-primary-600 border-primary-600;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -199,13 +263,21 @@
                 </a>
             </div>
             
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-4">
                 <?php if ($is_logged_in): ?>
-                    <span class="text-sm text-white/90">Welcome, <span class="font-semibold"><?php echo htmlspecialchars($user_name); ?></span></span>
-                    <a href="<?php echo site_url('auth/logout'); ?>" class="bg-error-500 text-white text-sm font-medium py-2 px-3 rounded-md hover:bg-error-700 transition duration-200">
-                        Logout
+                    
+                    <a href="<?php echo site_url('/profile'); ?>" 
+                       class="flex items-center justify-center w-8 h-8 bg-primary-700 rounded-full text-white font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary-800 focus:ring-white"
+                       title="My Profile">
+                        <span class="sr-only">Open user menu</span>
+                        <?php
+                            // Use data from session
+                            $first_initial = lava_instance()->session->userdata('first_name')[0] ?? 'U';
+                            $last_initial = lava_instance()->session->userdata('last_name')[0] ?? 'S';
+                            echo htmlspecialchars(strtoupper($first_initial . $last_initial));
+                        ?>
                     </a>
-                <?php else: ?>
+                    <?php else: ?>
                     <a href="<?php echo site_url('auth/login'); ?>" class="text-sm text-white hover:text-primary-200 transition duration-200">Login</a>
                     <a href="<?php echo site_url('auth/register'); ?>" class="bg-white text-primary-800 text-sm font-medium py-2 px-3 rounded-md hover:bg-primary-100 transition duration-200">Register</a>
                 <?php endif; ?>

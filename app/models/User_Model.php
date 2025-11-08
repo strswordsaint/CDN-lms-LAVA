@@ -14,7 +14,8 @@ class User_Model extends Model {
         'last_name',
         'email',
         'password', // Password will be hashed in the controller before insert
-        'role'
+        'role',
+        'status' // <-- ADDED
     ];
 
     public function __construct()
@@ -77,6 +78,19 @@ class User_Model extends Model {
     public function get_users_by_role($role) {
         return $this->filter(['role' => $role])
                     ->order_by('created_at', 'DESC')
+                    ->get_all();
+    }
+
+    /**
+     * Get all teachers awaiting approval.
+     * @return array
+     */
+    public function get_pending_teachers() {
+        return $this->filter([
+                        'role' => 'teacher',
+                        'status' => 'pending'
+                    ])
+                    ->order_by('created_at', 'ASC')
                     ->get_all();
     }
 }
