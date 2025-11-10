@@ -223,27 +223,33 @@
         // --- Teacher Logic ---
         $is_courses_section = in_array($current_segment, ['courses', 'submissions']);
         $is_assignments_section = ($current_segment == 'assignments');
+        $is_activities_section = ($current_segment == 'activities'); // <-- NEW
         
         // --- Student Logic ---
         $is_my_courses_active = (segment(3) == 'my' || $current_segment == 'my-courses');
         $is_assignments_active = ($current_segment == 'my-assignments' || $current_segment == 'assignment');
+        $is_activities_active = ($current_segment == 'my-activities'); // <-- NEW
         
         // === NEW: Notification Data Fetching ===
         $pending_assignment_count = 0;
         $ungraded_count = 0;
         $pending_enrollment_count = 0;
         $admin_user_management_active = false; // Initialize
+        $pending_activity_count = 0; // <-- NEW
 
         if ($is_logged_in) {
             $user_id = $LAVA->session->userdata('user_id');
             
             if ($user_role == 'student') {
                 $LAVA->call->model('Assignment_Model');
+                // count_pending_for_student will be updated to include both
                 $pending_assignment_count = $LAVA->Assignment_Model->count_pending_for_student($user_id);
+                // We'll separate this later if needed, for now one dot is fine.
             } 
             else if ($user_role == 'teacher') {
                 $LAVA->call->model('Assignment_Submission_Model');
                 $LAVA->call->model('Enrollment_Model');
+                // count_ungraded_for_teacher will be updated to include both
                 $ungraded_count = $LAVA->Assignment_Submission_Model->count_ungraded_for_teacher($user_id);
                 $pending_enrollment_count = $LAVA->Enrollment_Model->count_pending_for_teacher($user_id);
             }
@@ -347,6 +353,18 @@
                             </a>
                         </li>
                         <li>
+                            <a href="<?php echo site_url('/activities/all'); ?>" 
+                               title="Activities"
+                               class="sidebar-nav-link <?php echo $is_activities_section ? 'active' : ''; ?>">
+                               
+                               <?php if ($ungraded_count > 0): // This dot will now represent ungraded activities AND assignments ?>
+                                    <span class="notification-dot"></span>
+                               <?php endif; ?>
+                               
+                               <i class="fas fa-gamepad"></i> <span>Activities</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="<?php echo site_url('/assignments/all'); ?>" 
                                title="Assignments"
                                class="sidebar-nav-link <?php echo $is_assignments_section ? 'active' : ''; ?>">
@@ -375,6 +393,18 @@
                                class="sidebar-nav-link <?php echo $is_my_courses_active ? 'active' : ''; ?>">
                                <i class="fas fa-chalkboard"></i>
                                <span>My Courses</span>
+                            </a>
+                        </li>
+                         <li>
+                            <a href="<?php echo site_url('/my-activities'); ?>" 
+                               title="View All Activities"
+                               class="sidebar-nav-link <?php echo $is_activities_active ? 'active' : ''; ?>">
+                               
+                               <?php if ($pending_assignment_count > 0): // This dot represents both ?>
+                                    <span class="notification-dot"></span>
+                               <?php endif; ?>
+                               
+                               <i class="fas fa-gamepad"></i> <span>Activities</span>
                             </a>
                         </li>
                         <li>

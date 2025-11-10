@@ -128,6 +128,14 @@ $router->post('/courses/delete/{id}', 'CourseController::delete')->where_number(
 $router->get('/courses/{id}/assignments/create', 'AssignmentController::create')->where_number('id');
 // --- (This new route is for the "Post Announcement" form) ---
 $router->post('/courses/{id}/announcement/store', 'AssignmentController::store_announcement')->where_number('id');
+// --- (Add this for the new Teacher "All Activities" page) ---
+$router->get('/activities/all', 'ActivityController::view_all')->name('activities.all');
+
+//// --- (Add this for the new Student "My Activities" page) ---
+$router->get('/my-activities', 'StudentController::my_activities')->name('student.activities');
+
+// --- (Add this for the new Announcement/Activity post form) ---
+$router->post('/courses/{id}/post/store', 'AssignmentController::store_announcement_or_activity')->where_number('id');
 
 // --- Assignment Management (NEW) ---
 // These routes are nested under a course
@@ -189,4 +197,8 @@ $router->post('/admin/courses/delete/{id}', 'AdminController::delete_course')->w
 // --- Post Replies (NEW for Announcements/Assignments) ---
 $router->get('/post/{id}/replies', 'ReplyController::get')->where_number('id');
 $router->post('/post/{id}/reply', 'ReplyController::store')->where_number('id');
+$router->get('/admin/announcements', 'AdminController::manage_site_announcements')->name('admin.announcements.index');
+$router->post('/admin/announcements/store', 'AdminController::store_site_announcement')->name('admin.announcements.store');
+$router->post('/admin/announcements/delete/{id}', 'AdminController::delete_site_announcement')->where_number('id')->name('admin.announcements.delete');
+
 ?>

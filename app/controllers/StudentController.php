@@ -14,8 +14,7 @@ class StudentController extends Controller {
         $this->call->model('Course_Model');
         $this->call->model('Assignment_Model'); 
         $this->call->model('Resource_Model');
-        // REMOVED: Announcement_Model
-        $this->call->model('Assignment_Attachment_Model'); // <-- ADD THIS
+        $this->call->model('Assignment_Attachment_Model'); 
         
         $this->call->library('Upload');
         
@@ -123,29 +122,36 @@ class StudentController extends Controller {
         // 2. Get course details
         $data['course'] = $this->Course_Model->find($course_id);
         
-        // --- NEW UNIFIED STREAM LOGIC ---
-        // 1. Get all posts (assignments AND announcements)
-        $posts = $this->Assignment_Model->get_posts_for_course_stream($course_id);
+        // --- NEW 4-TAB LOGIC ---
+        // 1. Get all posts (announcements, activities, assignments)
+        $all_posts = $this->Assignment_Model->get_posts_for_course_stream($course_id);
         
-        $announcements = [];
-        $assignments = [];
+        $announcements_list = [];
+        $activities_list = [];
+        $assignments_list = [];
         
-        // 2. Loop through, get attachments, and split by type
-        foreach ($posts as $key => $post) {
+        // 2. Loop through, get attachments, and sort
+        foreach ($all_posts as $post) {
             $post['attachments'] = $this->Assignment_Attachment_Model->get_for_assignment($post['assignment_id']);
             
-            if ($post['type'] === 'assignment') {
-                $assignments[] = $post;
-            } else {
-                $announcements[] = $post;
+            // Add to the main "Announcements" stream
+            $announcements_list[] = $post;
+            
+            // Add to the "Activities" tab if it's an activity
+            if ($post['type'] === 'activity') {
+                $activities_list[] = $post;
+            }
+            // Add to the "Assignments" tab if it's an assignment
+            else if ($post['type'] === 'assignment') {
+                $assignments_list[] = $post;
             }
         }
         
-        // 3. Pass both arrays to the view
-        $data['announcements'] = $announcements;
-        $data['assignments'] = $assignments;
-        // --- END NEW LOGIC ---
-
+        // 3. Pass all three arrays to the view
+        $data['announcements'] = $announcements_list; // All posts
+        $data['activities'] = $activities_list;       // Only activities
+        $data['assignments'] = $assignments_list;     // Only assignments
+        
         // This is still needed for the "Materials" tab
         $data['materials'] = $this->Resource_Model->get_for_course($course_id);
         
@@ -166,9 +172,11 @@ class StudentController extends Controller {
             return;
         }
         
-        // --- NEW: Check if it's actually an assignment ---
-        if ($assignment['type'] !== 'assignment') {
-            $this->session->set_flashdata('error', 'This post is not an assignment.');
+        // --- THIS IS THE FIX ---
+        // Check if it's an assignment OR activity
+        if (!in_array($assignment['type'], ['assignment', 'activity'])) {
+        // --- END FIX ---
+            $this->session->set_flashdata('error', 'This post is not a submittable item.');
             // Redirect back to the course stream
             redirect('/my-courses/' . $assignment['course_id']);
             return;
@@ -212,7 +220,9 @@ class StudentController extends Controller {
 
         // 1. Get assignment details
         $assignment = $this->Assignment_Model->find($assignment_id);
-        if (!$assignment || $assignment['type'] !== 'assignment') {
+        // --- THIS IS THE FIX ---
+        if (!$assignment || !in_array($assignment['type'], ['assignment', 'activity'])) {
+        // --- END FIX ---
             $this->session->set_flashdata('error', 'Assignment not found.');
             redirect('/dashboard');
             return;
@@ -458,6 +468,44 @@ class StudentController extends Controller {
 
         // 5. Redirect back to the assignment page
         redirect('/assignment/' . $submission['assignment_id']);
+    }
+    /**
+     * Show the "My Activities" page with tabs
+     */
+    public function my_activities() {
+        $student_id = $this->session->userdata('user_id');
+        
+        // Use the new model function we will create
+        $all_activities = $this->Assignment_Model->get_all_activities_for_student($student_id); 
+        
+        $upcoming = [];
+        $past_due = [];
+        $completed = [];
+        
+        foreach ($all_activities as $activity) {
+            $is_submitted = $activity['submission_id'] !== null;
+            $is_graded = $activity['grade'] !== null;
+            $is_overdue = strtotime($activity['due_date']) < time();
+
+            if ($is_graded) {
+                $completed[] = $activity;
+            } else if ($is_submitted && $is_overdue) {
+                $completed[] = $activity;
+            } else if (!$is_submitted && $is_overdue) {
+                $past_due[] = $activity;
+            } else {
+                $upcoming[] = $activity;
+            }
+        }
+
+        $data['activities_upcoming'] = $upcoming;
+        $data['activities_past_due'] = $past_due;
+        $data['activities_completed'] = $completed;
+        
+        $data['page_title'] = 'My Activities';
+        
+        // We will create this new view file next
+        $this->call->view('/student/all_activities', $data);
     }
 
 }

@@ -78,6 +78,11 @@
     .btn-replies {
         @apply btn btn-secondary text-sm;
     }
+    
+    /* Styles for the hidden activity fields */
+    #activity-fields {
+        display: none;
+    }
 </style>
 
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -106,6 +111,7 @@
     <div class="border-b border-neutral-300 mb-6">
         <nav class="flex -mb-px">
             <a class="tab-link active" data-tab="announcements">Announcements</a>
+            <a class="tab-link" data-tab="activities">Activities</a>
             <a class="tab-link" data-tab="assignments">Assignments</a>
             <a class="tab-link" data-tab="materials">Materials</a>
         </nav>
@@ -114,23 +120,47 @@
     <div>
     
         <div id="tab-panel-announcements" class="tab-panel active">
-            <div class="card p-4 mb-6">
-                <form action="<?php echo site_url('/courses/' . $course['course_id'] . '/announcement/store'); ?>" method="POST" enctype="multipart/form-data">
+            <div class="card p-6 mb-6">
+                <form action="<?php echo site_url('/courses/' . $course['course_id'] . '/post/store'); ?>" method="POST" enctype="multipart/form-data">
                     <?php echo csrf_field(); ?>
-                    <div class="space-y-4">
+                    
+                    <div classs="space-y-4">
                         <div>
-                            <label for="title" class="block text-sm font-medium text-neutral-700 mb-1">New Announcement <span class="text-error-500">*</span></label>
+                            <label for="title" class="block text-lg font-semibold text-neutral-700 mb-2">Create a new post</label>
                             <input type="text" id="title" name="title" class="form-input" required placeholder="What's the title?">
                         </div>
-                        <div>
-                            <label for="description" class="block text-sm font-medium text-neutral-700 mb-1">Details</label>
-                            <textarea id="description" name="description" rows="4" class="form-textarea" placeholder="Add details..."></textarea>
+                        
+                        <div class="mt-4">
+                            <label for="description" class="block text-sm font-medium text-neutral-700 mb-1">Description / Details</label>
+                            <textarea id="description" name="description" rows="4" class="form-textarea" placeholder="Add details, instructions, etc..."></textarea>
                         </div>
-                        <div>
+
+                        <div class="mt-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="is-activity-checkbox" name="is_activity" class="h-4 w-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
+                                <span class="ml-2 block text-sm font-medium text-neutral-700">Make this as activity (add due date and points)</span>
+                            </label>
+                        </div>
+
+                        <div id="activity-fields" class="space-y-4 mt-4 p-4 bg-neutral-50 rounded-md border">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="due_date" class="block text-sm font-medium text-neutral-700 mb-1">Due Date <span class="text-error-500">*</span></label>
+                                    <input type="datetime-local" id="due_date" name="due_date" class="form-input">
+                                </div>
+                                <div>
+                                    <label for="points" class="block text-sm font-medium text-neutral-700 mb-1">Points <span class="text-error-500">*</span></label>
+                                    <input type="number" id="points" name="points" class="form-input" value="100" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
                             <label for="attachments" class="block text-sm font-medium text-neutral-700 mb-1">Attach Files</label>
                             <input type="file" name="attachments[]" id="attachments" class="form-input-file" multiple>
                         </div>
-                        <div class="text-right">
+                        
+                        <div class="text-right mt-4">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-paper-plane mr-2"></i>Post
                             </button>
@@ -141,16 +171,38 @@
             
             <div class="space-y-6">
                 <?php if (empty($announcements)): ?>
-                    <p class="text-neutral-500 p-6 text-center">No announcements have been posted yet.</p>
+                    <p class="text-neutral-500 p-6 text-center card">No announcements, activities, or assignments have been posted yet.</p>
                 <?php else: ?>
                     <?php foreach ($announcements as $post): ?>
                         <div class="post-card">
-                            <div class="post-icon bg-neutral-500"><i class="fas fa-bullhorn fa-lg"></i></div>
+                            <?php if ($post['type'] == 'assignment'): ?>
+                                <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
+                            <?php elseif ($post['type'] == 'activity'): ?>
+                                <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <?php else: ?>
+                                <div class="post-icon bg-neutral-500"><i class="fas fa-bullhorn fa-lg"></i></div>
+                            <?php endif; ?>
+                            
                             <div class="post-content">
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <span class="post-title"><?php echo htmlspecialchars($post['title']); ?></span>
-                                        <div class="post-meta">Posted on <?php echo date('M d, Y', strtotime($post['created_at'])); ?></div>
+                                        <?php if ($post['type'] == 'assignment'): ?>
+                                            <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                        <?php elseif ($post['type'] == 'activity'): ?>
+                                             <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                        <?php else: ?>
+                                            <span class="post-title"><?php echo htmlspecialchars($post['title']); ?></span>
+                                        <?php endif; ?>
+                                        
+                                        <div class="post-meta">
+                                            <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
+                                                Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
+                                                <span class="mx-1">&bull;</span>
+                                                <?php echo htmlspecialchars($post['points']); ?> pts
+                                            <?php else: ?>
+                                                Posted on <?php echo date('M d, Y', strtotime($post['created_at'])); ?>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                     <form action="<?php echo site_url('/assignments/delete/' . $post['assignment_id']); ?>" method="POST" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this post?');">
                                         <?php echo csrf_field(); ?> 
@@ -180,6 +232,56 @@
                 <?php endif; ?>
             </div>
         </div>
+        
+        <div id="tab-panel-activities" class="tab-panel">
+            <div class="space-y-6">
+                <?php if (empty($activities)): ?>
+                    <p class="text-neutral-500 p-6 text-center card">No activities have been posted yet. Post one from the "Announcements" tab.</p>
+                <?php else: ?>
+                    <?php foreach ($activities as $post): ?>
+                         <div class="post-card">
+                            <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <div class="post-content">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                        <div class="post-meta">
+                                            Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
+                                            <span class="mx-1">&bull;</span>
+                                            <?php echo htmlspecialchars($post['points']); ?> pts
+                                        </div>
+                                    </div>
+                                    <form action="<?php echo site_url('/assignments/delete/' . $post['assignment_id']); ?>" method="POST" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this activity?');">
+                                        <?php echo csrf_field(); ?> 
+                                        <button type="submit" title="Delete Post" class="text-neutral-400 hover:text-error-600"><i class="fas fa-trash-alt"></i></button>
+                                    </form>
+                                </div>
+                                <?php if (!empty($post['description'])): ?>
+                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($post['attachments'])): ?>
+                                    <ul class="post-attachments">
+                                        <?php foreach ($post['attachments'] as $file): ?>
+                                            <li class="post-attachment-item">
+                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
+                                <div class="post-footer">
+                                    <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="btn btn-secondary mr-2">
+                                        View Submissions
+                                    </a>
+                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
+                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <div id="tab-panel-assignments" class="tab-panel">
             <div class="text-right mb-4">
@@ -190,7 +292,7 @@
             
             <div class="space-y-6">
                 <?php if (empty($assignments)): ?>
-                    <p class="text-neutral-500 p-6 text-center card">No assignments have been created yet.</p>
+                    <p class="text-neutral-500 p-6 text-center card">No formal assignments have been created yet.</p>
                 <?php else: ?>
                     <?php foreach ($assignments as $post): ?>
                         <div class="post-card">
@@ -223,6 +325,9 @@
                                     </ul>
                                 <?php endif; ?>
                                 <div class="post-footer">
+                                    <a href="<?php echo site_url('/assignments/edit/' . $post['assignment_id']); ?>" class="btn btn-secondary mr-2">
+                                        <i class="fas fa-edit mr-1"></i> Edit
+                                    </a>
                                     <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="btn btn-secondary mr-2">
                                         View Submissions
                                     </a>
@@ -280,6 +385,25 @@
 
 <script>
 $(document).ready(function() {
+    
+    // --- NEW SCRIPT for Activity Form ---
+    var $activityCheckbox = $('#is-activity-checkbox');
+    var $activityFields = $('#activity-fields');
+    var $dueDate = $('#due_date');
+    var $points = $('#points');
+
+    $activityCheckbox.on('change', function() {
+        if ($(this).is(':checked')) {
+            $activityFields.slideDown(200);
+            $dueDate.prop('required', true);
+            $points.prop('required', true);
+        } else {
+            $activityFields.slideUp(200);
+            $dueDate.prop('required', false);
+            $points.prop('required', false);
+        }
+    });
+
     // --- Main Tab Switching Logic ---
     var storageKey = 'courseActiveTab_<?php echo $course['course_id']; ?>';
     var savedTab = sessionStorage.getItem(storageKey);
