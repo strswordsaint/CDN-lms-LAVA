@@ -116,7 +116,7 @@ $router->get('/courses', 'CourseController::index')->name('courses.index');
 $router->get('/courses/create', 'CourseController::create')->name('courses.create');
 // Store the new course in the database
 $router->post('/courses/store', 'CourseController::store')->name('courses.store');
-// Show the "manage" page for a single course (Assignments, Quizzes, etc.)
+// Show the "manage" page for a single course (Assignments)
 $router->get('/courses/show/{id}', 'CourseController::show')->where_number('id')->name('courses.show');
 // Show the form to edit a course
 $router->get('/courses/edit/{id}', 'CourseController::edit')->where_number('id')->name('courses.edit');
@@ -124,10 +124,13 @@ $router->get('/courses/edit/{id}', 'CourseController::edit')->where_number('id')
 $router->post('/courses/update/{id}', 'CourseController::update')->where_number('id')->name('courses.update');
 // Delete a course
 $router->post('/courses/delete/{id}', 'CourseController::delete')->where_number('id')->name('courses.delete');
+// --- (This route is for the "Create Assignment" page) ---
+$router->get('/courses/{id}/assignments/create', 'AssignmentController::create')->where_number('id');
+// --- (This new route is for the "Post Announcement" form) ---
+$router->post('/courses/{id}/announcement/store', 'AssignmentController::store_announcement')->where_number('id');
 
 // --- Assignment Management (NEW) ---
 // These routes are nested under a course
-$router->get('/courses/{id}/assignments/create', 'AssignmentController::create')->where_number('id');
 $router->post('/courses/{id}/assignments/store', 'AssignmentController::store')->where_number('id');
 $router->get('/assignments/edit/{assign_id}', 'AssignmentController::edit')->where_number('assign_id');
 $router->post('/assignments/update/{assign_id}', 'AssignmentController::update')->where_number('assign_id');
@@ -183,5 +186,7 @@ $router->post('/admin/courses/remove_student/{id}', 'AdminController::remove_stu
 
 $router->post('/admin/courses/delete/{id}', 'AdminController::delete_course')->where_number('id')->name('admin.courses.delete');
 
-
+// --- Post Replies (NEW for Announcements/Assignments) ---
+$router->get('/post/{id}/replies', 'ReplyController::get')->where_number('id');
+$router->post('/post/{id}/reply', 'ReplyController::store')->where_number('id');
 ?>

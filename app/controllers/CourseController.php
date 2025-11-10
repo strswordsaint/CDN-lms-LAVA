@@ -17,6 +17,7 @@ class CourseController extends Controller {
         $this->call->model('Assignment_Model');
         $this->call->model('Resource_Model');
         $this->call->model('Assignment_Attachment_Model');
+        // REMOVED: Announcement_Model
 
         // Middleware: Check if user is logged in for all course actions
         $this->check_auth();
@@ -67,18 +68,32 @@ class CourseController extends Controller {
 
         $data['course'] = $course;
         
-        // --- NEW LOGIC FOR ATTACHMENTS ---
-        // 1. Get all assignments
-        $assignments = $this->Assignment_Model->get_assignments_by_course($course_id);
+        // --- NEW UNIFIED STREAM LOGIC ---
+        // 1. Get all posts (assignments AND announcements)
+        $posts = $this->Assignment_Model->get_posts_for_course_stream($course_id);
         
-        // 2. Loop through and get attachments for each one
-        foreach ($assignments as $key => $assignment) {
-            $assignments[$key]['attachments'] = $this->Assignment_Attachment_Model->get_for_assignment($assignment['assignment_id']);
+        $announcements = [];
+        $assignments = [];
+        
+        // 2. Loop through, get attachments, and split by type
+        foreach ($posts as $key => $post) {
+            $post['attachments'] = $this->Assignment_Attachment_Model->get_for_assignment($post['assignment_id']);
+            
+            if ($post['type'] === 'assignment') {
+                $assignments[] = $post;
+            } else {
+                $announcements[] = $post;
+            }
         }
+        
+        // 3. Pass both arrays to the view
+        $data['announcements'] = $announcements;
         $data['assignments'] = $assignments;
         // --- END NEW LOGIC ---
         
+        // This is still needed for the "Materials" tab
         $data['materials'] = $this->Resource_Model->get_for_course($course_id);
+
         $data['page_title'] = 'Manage Course: ' . htmlspecialchars($course['title']);
         $this->call->view('/courses/ShowCourse', $data);
     }

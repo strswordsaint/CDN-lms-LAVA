@@ -61,7 +61,13 @@
                 </div>
                 <h2 class="text-xl font-semibold text-neutral-900 mt-4"><?php echo htmlspecialchars($first_name . ' ' . $last_name); ?></h2>
                 <p class="text-sm text-neutral-500"><?php echo htmlspecialchars($email); ?></p>
-            </div>
+                
+                <a href="<?php echo site_url('auth/logout'); ?>" 
+                   class="btn btn-danger-sm mt-6 w-full text-base">
+                   <i class="fas fa-sign-out-alt mr-2"></i>
+                   Sign Out
+                </a>
+                </div>
         </div>
 
         <div class="md:col-span-2">

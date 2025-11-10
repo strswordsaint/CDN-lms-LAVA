@@ -14,11 +14,12 @@ class Assignment_Model extends Model {
     // Fields allowed for mass assignment
     protected $fillable = [
         'course_id',
+        'type', // <-- ADDED
         'title',
         'description',
-        'points', // Added points
+        'points', 
         'due_date',
-        'attachment_path' // Added attachment path
+        // 'attachment_path' is no longer used, we use assignment_attachments table
     ];
 
 
@@ -28,17 +29,39 @@ class Assignment_Model extends Model {
     }
 
     /**
-     * Get all assignments for a specific course.
+     * Get all posts (assignments AND announcements) for a course,
+     * newest first. Also counts replies for each post.
+     *
+     * @param int $course_id The ID of the course.
+     * @return array List of posts for that course.
+     */
+    public function get_posts_for_course_stream($course_id) {
+        $sql = "
+            SELECT 
+                a.*,
+                (SELECT COUNT(*) FROM post_replies pr WHERE pr.assignment_id = a.assignment_id) as reply_count
+            FROM 
+                {$this->table} a
+            WHERE 
+                a.course_id = ?
+            ORDER BY
+                a.created_at DESC
+        ";
+        return $this->db->raw($sql, [$course_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * This function now specifically gets *only* assignments.
      *
      * @param int $course_id The ID of the course.
      * @return array List of assignments for that course.
      */
     public function get_assignments_by_course($course_id) {
-        // Use the filter method inherited from the base Model
-        // Filter where the 'course_id' column matches the provided $course_id
-        // This method correctly uses $this->db internally.
-        return $this->filter(['course_id' => $course_id])
-                    ->order_by('due_date', 'ASC') // Order by due date (optional)
+        return $this->filter([
+                        'course_id' => $course_id,
+                        'type' => 'assignment' // <-- ADDED THIS FILTER
+                    ])
+                    ->order_by('due_date', 'ASC') 
                     ->get_all();
     }
 
@@ -50,29 +73,26 @@ class Assignment_Model extends Model {
      * @return object|null The assignment details (including course_id and teacher_id) if found and owned, otherwise null.
      */
      public function find_with_course_check($assignment_id, $teacher_id) {
-         // --- THIS IS THE FIX ---
-         // Build the query using $this->db->... methods
-         $this->db->table($this->table . ' assignments') // Alias the table
+         $this->db->table($this->table . ' assignments') 
                    ->select('assignments.*, courses.teacher_id')
                    ->join('courses', 'courses.course_id = assignments.course_id')
                    ->where('assignments.assignment_id', $assignment_id);
          
-         $assignment = $this->db->get(); // Execute the query
-         // --- END FIX ---
+         $assignment = $this->db->get(); 
 
          if ($assignment && $assignment['teacher_id'] == $teacher_id) {
-             return $assignment; // Return assignment if found and teacher matches
+             return $assignment; 
          }
-         return null; // Otherwise return null
+         return null;
     }
 
     public function get_recent_assignments_for_teacher($teacher_id, $limit = 5) {
-        // Join with courses to filter by teacher_id
         $this->db->table($this->table . ' a')
                  ->select('a.assignment_id, a.title, a.due_date, c.title as course_title, c.course_id')
                  ->join('courses c', 'a.course_id = c.course_id')
                  ->where('c.teacher_id', $teacher_id)
-                 ->order_by('a.due_date', 'DESC') // Show most recent first
+                 ->where('a.type', 'assignment') // <-- ADDED
+                 ->order_by('a.due_date', 'DESC') 
                  ->limit($limit);
         
         return $this->db->get_all();
@@ -86,6 +106,7 @@ class Assignment_Model extends Model {
             LEFT JOIN assignment_submissions s ON a.assignment_id = s.assignment_id AND s.student_id = e.student_id
             WHERE e.student_id = ?
             AND e.status = 'approved'
+            AND a.type = 'assignment' -- <-- ADDED
             AND a.due_date > NOW()
             AND s.submission_id IS NULL
         ";
@@ -93,13 +114,6 @@ class Assignment_Model extends Model {
         return $result['pending_count'] ?? 0;
     }
 
-    /**
-     * Get upcoming assignment deadlines for a student.
-     *
-     * @param int $student_id
-     * @param int $limit
-     * @return array
-     */
     public function get_upcoming_for_student($student_id, $limit = 5) {
         $sql = "
             SELECT 
@@ -108,17 +122,16 @@ class Assignment_Model extends Model {
                 assignments a
             JOIN 
                 enrollments e ON a.course_id = e.course_id
-            
-            -- THIS IS THE FIX: ADDED THE JOIN TO THE 'courses' TABLE --
             JOIN 
                 courses c ON a.course_id = c.course_id
-            
             LEFT JOIN 
                 assignment_submissions s ON a.assignment_id = s.assignment_id AND s.student_id = e.student_id
             WHERE 
                 e.student_id = ?
             AND 
                 e.status = 'approved'
+            AND 
+                a.type = 'assignment' -- <-- ADDED
             AND 
                 a.due_date > NOW()
             AND 
@@ -156,6 +169,8 @@ class Assignment_Model extends Model {
                 e.student_id = ?
             AND 
                 e.status = 'approved'
+            AND 
+                a.type = 'assignment' -- <-- ADDED
             ORDER BY 
                 a.due_date DESC
         ";
@@ -178,6 +193,8 @@ class Assignment_Model extends Model {
                 courses c ON a.course_id = c.course_id
             WHERE 
                 c.teacher_id = ?
+            AND 
+                a.type = 'assignment' -- <-- ADDED
             ORDER BY 
                 a.due_date DESC
         ";

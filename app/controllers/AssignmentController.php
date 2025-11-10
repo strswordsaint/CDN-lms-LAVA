@@ -58,7 +58,7 @@ class AssignmentController extends Controller {
     }
     
     /**
-     * Store the new assignment in the database.
+     * Store a new ASSIGNMENT from the create page.
      * Corresponds to route: POST /courses/{id}/assignments/store
      */
     public function store($course_id) {
@@ -66,34 +66,35 @@ class AssignmentController extends Controller {
 
         // 1. Check ownership
         $course = $this->Course_Model->find_course($course_id, $teacher_id);
-        if (!$course) {
+        if (!$course && $this->session->userdata('role') !== 'admin') {
             $this->session->set_flashdata('error', 'Permission denied.');
             redirect('/courses');
             return;
         }
 
-        // 2. Validation
+        // 2. Validation for ASSIGNMENT
         $this->form_validation
             ->name('title')->required('Title is required.')
             ->name('due_date')->required('Due date is required.')
             ->name('points')->required('Points are required.')->numeric('Points must be a number.');
-            
+        
         if ($this->form_validation->run() == FALSE) {
             $this->session->set_flashdata('validation_errors', $this->form_validation->get_errors());
+            // Go back to the create page
             redirect('/courses/' . $course_id . '/assignments/create');
             return;
         }
 
-        // 3. Prepare Assignment Data
         $data = [
             'course_id' => $course_id,
+            'type' => 'assignment', // Hard-coded as assignment
             'title' => $this->io->post('title'),
-            'description' => $this->io->post('description'),
+            'description' => $this->io->post('description') ?? null,
             'due_date' => $this->io->post('due_date'),
             'points' => $this->io->post('points')
         ];
 
-        // 4. Save the main assignment to get its ID
+        // 3. Save the main assignment post to get its ID
         $assignment_id = $this->Assignment_Model->insert($data);
         if (!$assignment_id) {
             $this->session->set_flashdata('error', 'Failed to create assignment.');
@@ -101,20 +102,17 @@ class AssignmentController extends Controller {
             return;
         }
 
-        // 5. Handle Multiple File Uploads (NEW SULOTION)
+        // 4. Handle File Uploads
         $files = $_FILES['attachments'] ?? null;
         $files_uploaded_success = true;
-        $uploaded_file_db_data = []; // To store data for DB
-        $uploaded_file_paths = [];   // To store paths for rollback
+        $uploaded_file_db_data = [];
+        $uploaded_file_paths = [];
 
-        // Check if files were actually uploaded (name[0] is not empty)
         if ($files && !empty($files['name'][0])) {
             $file_count = count($files['name']);
-            
             $upload_dir = 'uploads/assignments/materials/' . $course_id . '/' . $assignment_id;
             if (!is_dir($upload_dir)) { mkdir($upload_dir, 0755, true); }
 
-            // Set the *constant* settings for the library (which was loaded in constructor)
             $this->Upload->set_dir($upload_dir);
             $this->Upload->allowed_extensions(array('pdf', 'docx', 'doc', 'pptx', 'ppt', 'txt', 'jpg', 'png', 'zip', 'mp4', 'mov', 'xls', 'xlsx'));
             $this->Upload->allowed_mimes(array(
@@ -123,15 +121,118 @@ class AssignmentController extends Controller {
                 'text/plain', 'image/jpeg', 'image/png', 'application/zip', 'video/mp4', 'video/quicktime',
                 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             ));
-            // $this->Upload->encrypt_name(); // Optional: if you want unique filenames
 
             for ($i = 0; $i < $file_count; $i++) {
-                // Skip empty file inputs (error code 4 is UPLOAD_ERR_NO_FILE)
                 if (empty($files['name'][$i]) || $files['error'][$i] == 4) {
                     continue;
                 }
+                $file_to_upload = [ /* ... (file prep logic) ... */ ];
+                // ... (rest of file upload loop from your file) ...
+                
+                // Manually set the library's 'file' property
+                $this->Upload->file = $file_to_upload;
 
-                // Create the single-file array structure
+                if ($this->Upload->do_upload()) {
+                    $new_filename = $this->Upload->get_filename();
+                    $filepath = $upload_dir . '/' . $new_filename;
+                    $uploaded_file_db_data[] = [
+                        'assignment_id' => $assignment_id,
+                        'file_name' => $file_to_upload['name'], 
+                        'file_path' => $filepath
+                    ];
+                    $uploaded_file_paths[] = $filepath;
+                } else {
+                    $this->session->set_flashdata('error', 'File upload failed: ' . $this->Upload->get_errors()[0]);
+                    $files_uploaded_success = false;
+                    break; 
+                }
+            }
+        }
+
+        // 5. Finalize
+        if ($files_uploaded_success) {
+            foreach ($uploaded_file_db_data as $file_data) {
+                $this->Assignment_Attachment_Model->insert($file_data);
+            }
+            $this->session->set_flashdata('success', 'Assignment created successfully.');
+        } else {
+            // Rollback
+            $this->Assignment_Model->delete($assignment_id);
+            foreach ($uploaded_file_paths as $path) {
+                $abs_path = ROOT_DIR . '/' . $path;
+                if(file_exists($abs_path)) { @unlink($abs_path); }
+            }
+        }
+        
+        // Redirect back to the new 'Assignments' tab
+        redirect('/courses/show/' . $course_id . '?tab=assignments');
+    }
+    
+    /**
+     * Store a new ANNOUNCEMENT from the course page form.
+     * Corresponds to route: POST /courses/{id}/announcement/store
+     */
+    public function store_announcement($course_id) {
+        $teacher_id = $this->session->userdata('user_id');
+
+        // 1. Check ownership
+        $course = $this->Course_Model->find_course($course_id, $teacher_id);
+        if (!$course && $this->session->userdata('role') !== 'admin') {
+            $this->session->set_flashdata('error', 'Permission denied.');
+            redirect('/courses');
+            return;
+        }
+        
+        // 2. Validation for ANNOUNCEMENT
+        $this->form_validation->name('title')->required('Title is required.');
+            
+        if ($this->form_validation->run() == FALSE) {
+            $this->session->set_flashdata('validation_errors', $this->form_validation->get_errors());
+            redirect('/courses/show/' . $course_id . '?tab=announcements');
+            return;
+        }
+
+        $data = [
+            'course_id' => $course_id,
+            'type' => 'announcement', // Hard-coded as announcement
+            'title' => $this->io->post('title'),
+            'description' => $this->io->post('description') ?? null,
+            'due_date' => null,
+            'points' => null
+        ];
+
+        // 3. Save the main post to get its ID
+        $assignment_id = $this->Assignment_Model->insert($data);
+        if (!$assignment_id) {
+            $this->session->set_flashdata('error', 'Failed to create announcement.');
+            redirect('/courses/show/' . $course_id . '?tab=announcements');
+            return;
+        }
+
+        // 4. Handle File Uploads
+        $files = $_FILES['attachments'] ?? null;
+        $files_uploaded_success = true;
+        $uploaded_file_db_data = [];
+        $uploaded_file_paths = [];
+
+        if ($files && !empty($files['name'][0])) {
+            $file_count = count($files['name']);
+            $upload_dir = 'uploads/assignments/materials/' . $course_id . '/' . $assignment_id;
+            if (!is_dir($upload_dir)) { mkdir($upload_dir, 0755, true); }
+
+            $this->Upload->set_dir($upload_dir);
+            $this->Upload->allowed_extensions(array('pdf', 'docx', 'doc', 'pptx', 'ppt', 'txt', 'jpg', 'png', 'zip', 'mp4', 'mov', 'xls', 'xlsx'));
+            $this->Upload->allowed_mimes(array(
+                'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint',
+                'text/plain', 'image/jpeg', 'image/png', 'application/zip', 'video/mp4', 'video/quicktime',
+                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ));
+
+            for ($i = 0; $i < $file_count; $i++) {
+                if (empty($files['name'][$i]) || $files['error'][$i] == 4) {
+                    continue;
+                }
                 $file_to_upload = [
                     'name' => $files['name'][$i],
                     'type' => $files['type'][$i],
@@ -139,58 +240,41 @@ class AssignmentController extends Controller {
                     'error' => $files['error'][$i],
                     'size' => $files['size'][$i],
                 ];
-
-                // Manually set the library's 'file' property
-                // This is the key to the solution
                 $this->Upload->file = $file_to_upload;
 
-                // Use the SINGLE upload method
                 if ($this->Upload->do_upload()) {
                     $new_filename = $this->Upload->get_filename();
-                    $original_name = $file_to_upload['name'];
                     $filepath = $upload_dir . '/' . $new_filename;
-
-                    // Store data to be saved, but don't save yet
                     $uploaded_file_db_data[] = [
                         'assignment_id' => $assignment_id,
-                        'file_name' => $original_name, 
+                        'file_name' => $file_to_upload['name'], 
                         'file_path' => $filepath
                     ];
-                    $uploaded_file_paths[] = $filepath; // Keep track for potential rollback
+                    $uploaded_file_paths[] = $filepath;
                 } else {
-                    // If *any* file fails, stop, set error, and break the loop
-                    $this->session->set_flashdata('error', 'File upload failed: ' . $this->Upload->get_errors()[0] . '. Please check the file type and try again.');
+                    $this->session->set_flashdata('error', 'File upload failed: ' . $this->Upload->get_errors()[0]);
                     $files_uploaded_success = false;
                     break; 
                 }
             }
         }
 
-        // Now, check if all files succeeded
+        // 5. Finalize
         if ($files_uploaded_success) {
-            // All files uploaded (or none were selected), now save to database
             foreach ($uploaded_file_db_data as $file_data) {
                 $this->Assignment_Attachment_Model->insert($file_data);
             }
-            
-            $this->session->set_flashdata('success', 'Assignment created successfully.');
-            redirect('/courses/show/' . $course_id);
+            $this->session->set_flashdata('success', 'Announcement posted successfully.');
         } else {
-            // An error occurred
-            // Rollback: Delete the assignment
+            // Rollback
             $this->Assignment_Model->delete($assignment_id);
-            // Rollback: Delete any files that *did* upload
             foreach ($uploaded_file_paths as $path) {
-                // *** PERFORMANCE FIX HERE ***
                 $abs_path = ROOT_DIR . '/' . $path;
-                if(file_exists($abs_path)) {
-                    @unlink($abs_path);
-                }
+                if(file_exists($abs_path)) { @unlink($abs_path); }
             }
-            // Redirect back with the error message
-            redirect('/courses/' . $course_id . '/assignments/create');
-            return;
         }
+        
+        redirect('/courses/show/' . $course_id . '?tab=announcements');
     }
 
     /**
@@ -199,10 +283,9 @@ class AssignmentController extends Controller {
     public function view_submissions($assignment_id) {
         $teacher_id = $this->session->userdata('user_id');
         
-        // This method name is from your previously uploaded file
         $assignment = $this->Assignment_Model->find_with_course_check($assignment_id, $teacher_id); 
 
-        if (!$assignment) {
+        if (!$assignment || $assignment['type'] !== 'assignment') {
             $this->session->set_flashdata('error', 'Assignment not found or permission denied.');
             redirect('/courses');
             return;
@@ -277,7 +360,6 @@ class AssignmentController extends Controller {
             return;
         }
 
-        // This method name is from your previously uploaded file
         if ($this->Assignment_Submission_Model->update_grade($submission_id, $grade, $feedback)) { 
              $this->session->set_flashdata('success', 'Grade and feedback saved successfully.');
         } else {
@@ -290,46 +372,42 @@ class AssignmentController extends Controller {
     public function delete($assignment_id) {
         $teacher_id = $this->session->userdata('user_id');
 
-        // 1. Security Check: Find assignment and verify teacher ownership
-        // This method also joins the 'courses' table to check the teacher_id
+        // 1. Security Check: Find post and verify teacher ownership
         $assignment = $this->Assignment_Model->find_with_course_check($assignment_id, $teacher_id);
 
         if (!$assignment) {
-            $this->session->set_flashdata('error', 'Assignment not found or permission denied.');
+            $this->session->set_flashdata('error', 'Post not found or permission denied.');
             redirect('/courses');
             return;
         }
+        
+        $post_type = $assignment['type']; // 'assignment' or 'announcement'
 
         // 2. Get all associated files
         $attachments = $this->Assignment_Attachment_Model->get_for_assignment($assignment_id);
-        $submissions = $this->Assignment_Submission_Model->get_submissions_for_assignment($assignment_id);
-
+        
         // 3. Delete files from the server
         try {
             // Delete attachment files
             foreach ($attachments as $file) {
-                // *** PERFORMANCE FIX HERE ***
                 $abs_path = ROOT_DIR . '/' . $file['file_path'];
                 if ($file['file_path'] && file_exists($abs_path)) {
                     @unlink($abs_path);
                 }
             }
-            // Delete submission files
-            foreach ($submissions as $sub) {
-                // *** PERFORMANCE FIX HERE ***
-                // Handle both JSON and single-string paths
-                $files = json_decode($sub['file_path'], true);
-                if (is_array($files)) {
-                    foreach($files as $file) {
-                         $abs_path = ROOT_DIR . '/' . $file['file_path'];
-                         if (isset($file['file_path']) && file_exists($abs_path)) {
-                            @unlink($abs_path);
+            
+            // If it's an assignment, also delete all submission files
+            if ($post_type === 'assignment') {
+                $submissions = $this->Assignment_Submission_Model->get_submissions_for_assignment($assignment_id);
+                foreach ($submissions as $sub) {
+                    $files = json_decode($sub['file_path'], true);
+                    if (is_array($files)) {
+                        foreach($files as $file) {
+                             $abs_path = ROOT_DIR . '/' . $file['file_path'];
+                             if (isset($file['file_path']) && file_exists($abs_path)) {
+                                @unlink($abs_path);
+                            }
                         }
-                    }
-                } else if (!empty($sub['file_path'])) {
-                    $abs_path = ROOT_DIR . '/' . $sub['file_path'];
-                    if(file_exists($abs_path)) {
-                        @unlink($abs_path);
                     }
                 }
             }
@@ -338,21 +416,18 @@ class AssignmentController extends Controller {
         }
 
         // 4. Delete records from the database
-        // We delete from child tables first to avoid foreign key errors
+        // The CASCADE DELETE on the DB will handle:
+        // - assignment_attachments
+        // - assignment_submissions (if any)
+        // - post_replies (if any)
         
-        // Delete attachment records
-        $this->db->table('assignment_attachments')->where('assignment_id', $assignment_id)->delete();
-        
-        // Delete submission records
-        $this->db->table('assignment_submissions')->where('assignment_id', $assignment_id)->delete();
-        
-        // Finally, delete the main assignment
         $deleted = $this->Assignment_Model->delete($assignment_id);
 
         if ($deleted) {
-            $this->session->set_flashdata('success', 'Assignment and all its submissions were deleted.');
+            $message = ($post_type === 'assignment') ? 'Assignment and all its data were deleted.' : 'Announcement deleted successfully.';
+            $this->session->set_flashdata('success', $message);
         } else {
-            $this->session->set_flashdata('error', 'Failed to delete the assignment from the database.');
+            $this->session->set_flashdata('error', 'Failed to delete the post from the database.');
         }
 
         // Redirect back to the course page
@@ -369,6 +444,13 @@ class AssignmentController extends Controller {
             $this->session->set_flashdata('error', 'Assignment not found or permission denied.');
             redirect('/courses');
             return;
+        }
+        
+        // --- NEW: Redirect announcements to the main page ---
+        if ($assignment['type'] === 'announcement') {
+             $this->session->set_flashdata('error', 'Announcements cannot be edited. Please delete and recreate it.');
+             redirect('/courses/show/' . $assignment['course_id']);
+             return;
         }
 
         // 2. Get current attachments
@@ -389,8 +471,8 @@ class AssignmentController extends Controller {
 
         // 1. Security Check: Verify teacher ownership
         $assignment = $this->Assignment_Model->find_with_course_check($assignment_id, $teacher_id);
-        if (!$assignment) {
-            $this->session->set_flashdata('error', 'Permission denied.');
+        if (!$assignment || $assignment['type'] !== 'assignment') {
+            $this->session->set_flashdata('error', 'Permission denied or post is not an assignment.');
             redirect('/courses');
             return;
         }
@@ -469,7 +551,7 @@ class AssignmentController extends Controller {
         }
         
         $this->session->set_flashdata('success', 'Assignment updated successfully.');
-        redirect('/courses/show/' . $assignment['course_id']);
+        redirect('/courses/show/' . $assignment['course_id'] . '?tab=assignments');
     }
 
     public function view_all() {

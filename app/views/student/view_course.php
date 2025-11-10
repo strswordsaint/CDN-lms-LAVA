@@ -2,38 +2,81 @@
 <?php include 'app/views/layouts/header.php'; ?>
 
 <style>
-    /* === Styles for Tabs (from assignment page) === */
+    /* === Styles for Tabs === */
     .tab-link {
         padding: 0.5rem 1rem;
         font-weight: 600;
-        color: #64748b; /* neutral-500 */
+        color: #64748b;
         border-bottom: 2px solid transparent;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
     }
     .tab-link.active {
-        color: #1d4ed8; /* primary-700 */
+        color: #1d4ed8;
         border-bottom-color: #1d4ed8;
     }
     .tab-panel {
-        display: none; /* Hide all panels by default */
+        display: none;
     }
     .tab-panel.active {
-        display: block; /* Show only the active panel */
+        display: block;
     }
-    /* === END: Styles for Tabs === */
 
-    /* Styles for the file lists */
-    .list-item {
-        border-bottom: 1px solid #e5e7eb;
+    /* === Styles for Stream Posts === */
+    .post-card {
+        @apply card flex space-x-4 p-5;
     }
-    .list-item:last-child { border-bottom: 0; }
-    
-    /* A smaller button variant */
-    .btn-sm {
+    .post-icon {
+        @apply flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white;
+    }
+    .post-content {
+        @apply flex-1;
+    }
+    .post-title {
+        @apply text-lg font-semibold text-neutral-900;
+    }
+    .post-title a:hover {
+        @apply underline;
+    }
+    .post-meta {
+        @apply text-xs text-neutral-500 mt-1;
+    }
+    .post-description {
+        @apply text-sm text-neutral-700 mt-3;
+    }
+    .post-attachments {
+        list-style: none;
+        padding-left: 0;
+        margin-top: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    .post-attachment-item {
+        font-size: 0.875rem;
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.375rem;
         padding: 0.25rem 0.75rem;
-        font-size: 0.75rem;
+    }
+    .post-attachment-item a {
+        color: #1d4ed8;
+        font-weight: 500;
+        text-decoration: none;
+    }
+    .post-attachment-item a:hover {
+        text-decoration: underline;
+    }
+    .post-attachment-item i {
+        color: #64748b;
+        margin-right: 0.375rem;
+    }
+    .post-footer {
+        @apply mt-4 pt-3 border-t border-neutral-200 flex justify-end;
+    }
+    .btn-replies {
+        @apply btn btn-secondary text-sm;
     }
 </style>
 
@@ -44,54 +87,100 @@
 
     <div class="card p-6 mb-6">
         <h1 class="text-3xl font-bold text-neutral-900 mb-2"><?php echo htmlspecialchars($course['title']); ?></h1>
-        <div class="prose prose-sm max-w-none text-neutral-700">
-            <p class="text-sm text-neutral-600"><?php echo nl2br(htmlspecialchars($course['description'])); ?></p>
-        </div>
+        <p class="text-sm text-neutral-600"><?php echo nl2br(htmlspecialchars($course['description'])); ?></p>
     </div>
 
     <div class="border-b border-neutral-300 mb-6">
         <nav class="flex -mb-px">
-            <a class="tab-link active" data-tab="assignments">Assignments</a>
+            <a class="tab-link active" data-tab="announcements">Announcements</a>
+            <a class="tab-link" data-tab="assignments">Assignments</a>
             <a class="tab-link" data-tab="materials">Materials</a>
         </nav>
     </div>
+    
     <div>
-
-        <div id="tab-panel-assignments" class="tab-panel active">
-            <div class="card">
-                <div class="p-6 border-b">
-                    <h2 class="text-xl font-semibold text-neutral-700">Assignments</h2>
-                </div>
-                <div class="divide-y divide-neutral-200">
-                    <?php if (empty($assignments)): ?>
-                        <p class="text-neutral-500 p-6 text-center">No assignments have been posted yet.</p>
-                    <?php else: ?>
-                        <?php foreach ($assignments as $assignment): ?>
-                            <div class="p-6 hover:bg-neutral-50 list-item">
-                                <div class="flex flex-wrap justify-between items-center gap-4">
-                                    <div class="flex-grow">
-                                        <h3 class="text-lg font-semibold text-primary-800"><?php echo htmlspecialchars($assignment['title']); ?></h3>
-                                        <div class="text-sm text-neutral-500 mt-1">
-                                            <span class="mr-4"><i class="fas fa-calendar-alt mr-1"></i> <strong>Due:</strong> <?php echo date('M d, Y @ g:i A', strtotime($assignment['due_date'])); ?></span>
-                                            <span><i class="fas fa-star mr-1"></i> <strong>Points:</strong> <?php echo htmlspecialchars($assignment['points']); ?></span>
-                                        </div>
-                                        <?php if (!empty($assignment['description'])): ?>
-                                            <p class="text-neutral-600 mt-2 text-sm"><?php echo nl2br(htmlspecialchars($assignment['description'])); ?></p>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="flex-shrink-0 flex items-center gap-3">
-                                        <a href="<?php echo site_url('/assignment/' . $assignment['assignment_id']); ?>" class="btn btn-primary">
-                                            <i class="fas fa-upload mr-1"></i> View/Submit Work
-                                        </a>
-                                    </div>
+        
+        <div id="tab-panel-announcements" class="tab-panel active">
+            <div class="space-y-6">
+                <?php if (empty($announcements)): ?>
+                     <p class="text-neutral-500 p-6 text-center card">No announcements have been posted yet.</p>
+                <?php else: ?>
+                    <?php foreach ($announcements as $post): ?>
+                        <div class="post-card">
+                            <div class="post-icon bg-neutral-500"><i class="fas fa-bullhorn fa-lg"></i></div>
+                            <div class="post-content">
+                                <div>
+                                    <span class="post-title"><?php echo htmlspecialchars($post['title']); ?></span>
+                                    <div class="post-meta">Posted on <?php echo date('M d, Y', strtotime($post['created_at'])); ?></div>
+                                </div>
+                                <?php if (!empty($post['description'])): ?>
+                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($post['attachments'])): ?>
+                                    <ul class="post-attachments">
+                                        <?php foreach ($post['attachments'] as $file): ?>
+                                            <li class="post-attachment-item">
+                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
+                                <div class="post-footer">
+                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
+                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
+                                    </button>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
         
+        <div id="tab-panel-assignments" class="tab-panel">
+            <div class="space-y-6">
+                <?php if (empty($assignments)): ?>
+                    <p class="text-neutral-500 p-6 text-center card">No assignments have been posted yet.</p>
+                <?php else: ?>
+                    <?php foreach ($assignments as $post): ?>
+                        <div class="post-card">
+                            <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
+                            <div class="post-content">
+                                <div>
+                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                    <div class="post-meta">
+                                        Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
+                                        <span class="mx-1">&bull;</span>
+                                        <?php echo htmlspecialchars($post['points']); ?> pts
+                                    </div>
+                                </div>
+                                <?php if (!empty($post['description'])): ?>
+                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($post['attachments'])): ?>
+                                    <ul class="post-attachments">
+                                        <?php foreach ($post['attachments'] as $file): ?>
+                                            <li class="post-attachment-item">
+                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
+                                <div class="post-footer">
+                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
+                                        View/Submit Work
+                                    </a>
+                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
+                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <div id="tab-panel-materials" class="tab-panel">
             <div class="card">
                 <div class="p-6 border-b">
@@ -102,10 +191,12 @@
                         <p class="text-neutral-500 p-6 text-center">No materials have been uploaded for this course yet.</p>
                     <?php else: ?>
                         <?php foreach ($materials as $material): ?>
-                            <div class="p-4 flex justify-between items-center hover:bg-neutral-50 list-item">
+                            <div class="p-4 flex justify-between items-center hover:bg-neutral-50">
                                 <div class="flex items-center">
                                     <i class="fas fa-file-alt text-neutral-500 mr-3"></i>
-                                    <span class="text-sm font-medium text-neutral-800"><?php echo htmlspecialchars($material['file_name']); ?></span>
+                                    <a href="<?php echo base_url() . $material['file_path']; ?>" download class="text-sm font-medium text-primary-600 hover:underline">
+                                        <?php echo htmlspecialchars($material['file_name']); ?>
+                                    </a>
                                 </div>
                                 <a href="<?php echo base_url() . $material['file_path']; ?>" download class="btn btn-success btn-sm">
                                     <i class="fas fa-download mr-1"></i> Download
@@ -118,41 +209,40 @@
         </div>
 
     </div>
-    </div>
+</div>
 
 <?php include 'app/views/layouts/footer.php'; ?>
 
 <script>
 $(document).ready(function() {
-    // Use a unique key for this specific student course page
+    // --- Main Tab Switching Logic ---
     var storageKey = 'studentCourseActiveTab_<?php echo $course['course_id']; ?>';
-
-    // 1. On page load, check for a saved tab
     var savedTab = sessionStorage.getItem(storageKey);
-    if (savedTab) {
-        // Remove default active state
-        $('.tab-link').removeClass('active');
-        $('.tab-panel').removeClass('active');
-        
-        // Apply the saved active state
-        $('.tab-link[data-tab="' + savedTab + '"]').addClass('active');
-        $('#tab-panel-' + savedTab).addClass('active');
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTab = urlParams.get('tab');
+    
+    if (urlTab) {
+        savedTab = urlTab;
+        sessionStorage.setItem(storageKey, urlTab);
     }
 
-    // 2. On tab click, save the new tab
+    if (!savedTab) {
+        savedTab = 'announcements'; // Default to announcements
+    }
+
+    $('.tab-link').removeClass('active');
+    $('.tab-panel').removeClass('active');
+    $('.tab-link[data-tab="' + savedTab + '"]').addClass('active');
+    $('#tab-panel-' + savedTab).addClass('active');
+
     $('.tab-link').on('click', function(e) {
         e.preventDefault();
-        
         var tab = $(this).data('tab');
-        
-        // Save the clicked tab to session storage
         sessionStorage.setItem(storageKey, tab);
         
-        // Update tab link active state
         $('.tab-link').removeClass('active');
         $(this).addClass('active');
         
-        // Show/hide tab panels
         $('.tab-panel').removeClass('active');
         $('#tab-panel-' + tab).addClass('active');
     });
