@@ -282,6 +282,56 @@
                 <?php endif; ?>
             </div>
         </div>
+        
+        <div id="tab-panel-activities" class="tab-panel">
+            <div class="space-y-6">
+                <?php if (empty($activities)): ?>
+                    <p class="text-neutral-500 p-6 text-center card">No activities have been posted yet. Post one from the "Announcements" tab.</p>
+                <?php else: ?>
+                    <?php foreach ($activities as $post): ?>
+                         <div class="post-card">
+                            <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <div class="post-content">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                        <div class="post-meta">
+                                            Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
+                                            <span class="mx-1">&bull;</span>
+                                            <?php echo htmlspecialchars($post['points']); ?> pts
+                                        </div>
+                                    </div>
+                                    <form action="<?php echo site_url('/assignments/delete/' . $post['assignment_id']); ?>" method="POST" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this activity?');">
+                                        <?php echo csrf_field(); ?> 
+                                        <button type="submit" title="Delete Post" class="text-neutral-400 hover:text-error-600"><i class="fas fa-trash-alt"></i></button>
+                                    </form>
+                                </div>
+                                <?php if (!empty($post['description'])): ?>
+                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($post['attachments'])): ?>
+                                    <ul class="post-attachments">
+                                        <?php foreach ($post['attachments'] as $file): ?>
+                                            <li class="post-attachment-item">
+                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
+                                <div class="post-footer">
+                                    <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="btn btn-secondary mr-2">
+                                        View Submissions
+                                    </a>
+                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
+                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <div id="tab-panel-assignments" class="tab-panel">
             <div class="text-right mb-4">

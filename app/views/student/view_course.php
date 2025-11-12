@@ -147,6 +147,9 @@
                                     </ul>
                                 <?php endif; ?>
                                 <div class="post-footer">
+                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
+                                        View/Submit Work
+                                    </a>
                                     <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
                                         <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
                                     </button>
