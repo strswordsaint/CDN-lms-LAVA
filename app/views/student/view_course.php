@@ -93,6 +93,7 @@
     <div class="border-b border-neutral-300 mb-6">
         <nav class="flex -mb-px">
             <a class="tab-link active" data-tab="announcements">Announcements</a>
+            <a class="tab-link" data-tab="activities">Activities</a>
             <a class="tab-link" data-tab="assignments">Assignments</a>
             <a class="tab-link" data-tab="materials">Materials</a>
         </nav>
@@ -103,15 +104,35 @@
         <div id="tab-panel-announcements" class="tab-panel active">
             <div class="space-y-6">
                 <?php if (empty($announcements)): ?>
-                     <p class="text-neutral-500 p-6 text-center card">No announcements have been posted yet.</p>
+                     <p class="text-neutral-500 p-6 text-center card">No announcements, activities, or assignments have been posted yet.</p>
                 <?php else: ?>
                     <?php foreach ($announcements as $post): ?>
                         <div class="post-card">
-                            <div class="post-icon bg-neutral-500"><i class="fas fa-bullhorn fa-lg"></i></div>
+                            <?php if ($post['type'] == 'assignment'): ?>
+                                <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
+                            <?php elseif ($post['type'] == 'activity'): ?>
+                                <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <?php else: ?>
+                                <div class="post-icon bg-neutral-500"><i class="fas fa-bullhorn fa-lg"></i></div>
+                            <?php endif; ?>
+                            
                             <div class="post-content">
                                 <div>
-                                    <span class="post-title"><?php echo htmlspecialchars($post['title']); ?></span>
-                                    <div class="post-meta">Posted on <?php echo date('M d, Y', strtotime($post['created_at'])); ?></div>
+                                    <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
+                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                    <?php else: ?>
+                                        <span class="post-title"><?php echo htmlspecialchars($post['title']); ?></span>
+                                    <?php endif; ?>
+
+                                    <div class="post-meta">
+                                        <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
+                                            Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
+                                            <span class="mx-1">&bull;</span>
+                                            <?php echo htmlspecialchars($post['points']); ?> pts
+                                        <?php else: ?>
+                                            Posted on <?php echo date('M d, Y', strtotime($post['created_at'])); ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
                                     <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
@@ -137,10 +158,54 @@
             </div>
         </div>
         
+        <div id="tab-panel-activities" class="tab-panel">
+            <div class="space-y-6">
+                <?php if (empty($activities)): ?>
+                    <p class="text-neutral-500 p-6 text-center card">No activities have been posted yet.</p>
+                <?php else: ?>
+                    <?php foreach ($activities as $post): ?>
+                        <div class="post-card">
+                            <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <div class="post-content">
+                                <div>
+                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                    <div class="post-meta">
+                                        Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
+                                        <span class="mx-1">&bull;</span>
+                                        <?php echo htmlspecialchars($post['points']); ?> pts
+                                    </div>
+                                </div>
+                                <?php if (!empty($post['description'])): ?>
+                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($post['attachments'])): ?>
+                                    <ul class="post-attachments">
+                                        <?php foreach ($post['attachments'] as $file): ?>
+                                            <li class="post-attachment-item">
+                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
+                                <div class="post-footer">
+                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
+                                        View/Submit Work
+                                    </a>
+                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
+                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        
         <div id="tab-panel-assignments" class="tab-panel">
             <div class="space-y-6">
                 <?php if (empty($assignments)): ?>
-                    <p class="text-neutral-500 p-6 text-center card">No assignments have been posted yet.</p>
+                    <p class="text-neutral-500 p-6 text-center card">No formal assignments have been posted yet.</p>
                 <?php else: ?>
                     <?php foreach ($assignments as $post): ?>
                         <div class="post-card">

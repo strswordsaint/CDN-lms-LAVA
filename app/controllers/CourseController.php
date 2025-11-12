@@ -75,21 +75,33 @@ class CourseController extends Controller {
         $announcements = [];
         $assignments = [];
         
-        // 2. Loop through, get attachments, and split by type
-        foreach ($posts as $key => $post) {
+        $all_posts = $this->Assignment_Model->get_posts_for_course_stream($course_id);
+        
+        $announcements_list = [];
+        $activities_list = [];
+        $assignments_list = [];
+        
+        // 2. Loop through, get attachments, and sort
+        foreach ($all_posts as $post) {
             $post['attachments'] = $this->Assignment_Attachment_Model->get_for_assignment($post['assignment_id']);
             
-            if ($post['type'] === 'assignment') {
-                $assignments[] = $post;
-            } else {
-                $announcements[] = $post;
+            // Add to the main "Announcements" stream
+            $announcements_list[] = $post;
+            
+            // Add to the "Activities" tab if it's an activity
+            if ($post['type'] === 'activity') {
+                $activities_list[] = $post;
+            }
+            // Add to the "Assignments" tab if it's an assignment
+            else if ($post['type'] === 'assignment') {
+                $assignments_list[] = $post;
             }
         }
         
-        // 3. Pass both arrays to the view
-        $data['announcements'] = $announcements;
-        $data['assignments'] = $assignments;
-        // --- END NEW LOGIC ---
+        // 3. Pass all three arrays to the view
+        $data['announcements'] = $announcements_list; // All posts
+        $data['activities'] = $activities_list;       // Only activities
+        $data['assignments'] = $assignments_list;     // Only assignments
         
         // This is still needed for the "Materials" tab
         $data['materials'] = $this->Resource_Model->get_for_course($course_id);
