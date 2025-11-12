@@ -60,5 +60,16 @@
         </form>
     </div>
 </div>
+<script>
+    tinymce.init({
+        selector: 'textarea#description', // Targets the "description" textarea
+        plugins: 'lists link media',
+        toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link media',
+        media_dimensions: false,
+        media_live_embeds: true,
+        height: 300,
+        license_key: 'gpl'
+    });
+</script>
 
 <?php include 'app/views/layouts/footer.php'; ?>

@@ -135,7 +135,7 @@
                                     </div>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">
@@ -176,7 +176,7 @@
                                     </div>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">
@@ -220,7 +220,7 @@
                                     </div>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">

@@ -210,7 +210,7 @@
                                     </form>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">
@@ -257,7 +257,7 @@
                                     </form>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">
@@ -313,7 +313,7 @@
                                     </form>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">
@@ -384,15 +384,24 @@
 <?php include 'app/views/layouts/footer.php'; ?>
 
 <script>
-$(document).ready(function() {
-    
-    // --- NEW SCRIPT for Activity Form ---
-    var $activityCheckbox = $('#is-activity-checkbox');
-    var $activityFields = $('#activity-fields');
-    var $dueDate = $('#due_date');
-    var $points = $('#points');
 
-    $activityCheckbox.on('change', function() {
+    tinymce.init({
+        selector: 'textarea#description',
+        plugins: 'lists link media',
+        toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link media',
+        media_dimensions: false,
+        media_live_embeds: true,
+        height: 250,
+        license_key: 'gpl'
+    });
+
+    $(document).ready(function() {
+        var $activityCheckbox = $('#is-activity-checkbox');
+        var $activityFields = $('#activity-fields');
+        var $dueDate = $('#due_date');
+        var $points = $('#points');
+
+        $activityCheckbox.on('change', function() {
         if ($(this).is(':checked')) {
             $activityFields.slideDown(200);
             $dueDate.prop('required', true);

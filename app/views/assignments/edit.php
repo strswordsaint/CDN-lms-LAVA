@@ -51,8 +51,8 @@
             <div class="mb-5">
                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Instructions</label>
                 <textarea id="description" name="description" rows="6"
-                          class="input-field w-full px-4 py-2 rounded-md"
-                ><?php echo htmlspecialchars($assignment['description'] ?? ''); ?></textarea>
+                    class="input-field w-full px-4 py-2 rounded-md"
+                ><?php echo $assignment['description'] ?? ''; ?></textarea>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -110,5 +110,17 @@
         </form>
     </div>
 </div>
+
+<script>
+    tinymce.init({
+        selector: 'textarea#description', // Targets the "description" textarea
+        plugins: 'lists link media',
+        toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link media',
+        media_dimensions: false,
+        media_live_embeds: true,
+        height: 300,
+        license_key: 'gpl'
+    });
+</script>
 
 <?php include 'app/views/layouts/footer.php'; ?>
