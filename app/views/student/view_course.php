@@ -135,7 +135,7 @@
                                     </div>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">
@@ -147,6 +147,9 @@
                                     </ul>
                                 <?php endif; ?>
                                 <div class="post-footer">
+                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
+                                        View/Submit Work
+                                    </a>
                                     <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
                                         <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
                                     </button>
@@ -176,7 +179,7 @@
                                     </div>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">
@@ -220,7 +223,7 @@
                                     </div>
                                 </div>
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
+                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($post['attachments'])): ?>
                                     <ul class="post-attachments">

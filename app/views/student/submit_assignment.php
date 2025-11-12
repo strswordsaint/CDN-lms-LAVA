@@ -39,8 +39,7 @@
         </div>
         <?php if (!empty($assignment['description'])): ?>
             <h3 class="text-lg font-semibold text-gray-700 mb-2">Instructions</h3>
-            <p class="text-gray-600"><?php echo nl2br(htmlspecialchars($assignment['description'])); ?></p>
-        <?php endif; ?>
+            <div class="prose prose-sm max-w-none text-neutral-700"><?php echo $assignment['description']; ?></div>        <?php endif; ?>
         
         <?php // --- FIX for multiple attachments ---
         if (!empty($assignment['attachments'])): ?>

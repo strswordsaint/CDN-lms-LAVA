@@ -50,6 +50,7 @@
         </div>
     </div>
     <script>
+
         $(document).ready(function() {
             // Flash message fade out
             $('.notice[style*="display:block"]').each(function() {
