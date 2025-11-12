@@ -4,7 +4,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 /**
  * Model: Assignment_Model
  *
- * Manages the 'assignments' table.
+ * Manages the 'assignments' table for Announcements, Activities, and Assignments.
  */
 class Assignment_Model extends Model {
 
@@ -14,11 +14,11 @@ class Assignment_Model extends Model {
     // Fields allowed for mass assignment
     protected $fillable = [
         'course_id',
+        'type', // 'announcement', 'activity', 'assignment'
         'title',
         'description',
-        'points', // Added points
+        'points', 
         'due_date',
-        'attachment_path' // Added attachment path
     ];
 
 
@@ -28,56 +28,83 @@ class Assignment_Model extends Model {
     }
 
     /**
-     * Get all assignments for a specific course.
-     *
-     * @param int $course_id The ID of the course.
-     * @return array List of assignments for that course.
+     * Get all posts (announcements, activities, assignments) for a course stream.
+     * Newest first. Also counts replies.
+     */
+    public function get_posts_for_course_stream($course_id) {
+        $sql = "
+            SELECT 
+                a.*,
+                (SELECT COUNT(*) FROM post_replies pr WHERE pr.assignment_id = a.assignment_id) as reply_count
+            FROM 
+                {$this->table} a
+            WHERE 
+                a.course_id = ?
+            ORDER BY
+                a.created_at DESC
+        ";
+        return $this->db->raw($sql, [$course_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * Get *only* 'assignment' type posts for a course.
      */
     public function get_assignments_by_course($course_id) {
-        // Use the filter method inherited from the base Model
-        // Filter where the 'course_id' column matches the provided $course_id
-        // This method correctly uses $this->db internally.
-        return $this->filter(['course_id' => $course_id])
-                    ->order_by('due_date', 'ASC') // Order by due date (optional)
+        return $this->filter([
+                        'course_id' => $course_id,
+                        'type' => 'assignment'
+                    ])
+                    ->order_by('due_date', 'ASC') 
+                    ->get_all();
+    }
+    
+    /**
+     * Get *only* 'activity' type posts for a course.
+     */
+    public function get_activities_by_course($course_id) {
+        return $this->filter([
+                        'course_id' => $course_id,
+                        'type' => 'activity'
+                    ])
+                    ->order_by('due_date', 'ASC') 
                     ->get_all();
     }
 
     /**
-     * Find a specific assignment AND check if the teacher owns the course it belongs to.
-     *
-     * @param int $assignment_id The ID of the assignment to find.
-     * @param int $teacher_id The ID of the teacher who should own the course.
-     * @return object|null The assignment details (including course_id and teacher_id) if found and owned, otherwise null.
+     * Find a specific assignment AND check if the teacher owns the course.
      */
      public function find_with_course_check($assignment_id, $teacher_id) {
-         // --- THIS IS THE FIX ---
-         // Build the query using $this->db->... methods
-         $this->db->table($this->table . ' assignments') // Alias the table
+         $this->db->table($this->table . ' assignments') 
                    ->select('assignments.*, courses.teacher_id')
                    ->join('courses', 'courses.course_id = assignments.course_id')
                    ->where('assignments.assignment_id', $assignment_id);
          
-         $assignment = $this->db->get(); // Execute the query
-         // --- END FIX ---
+         $assignment = $this->db->get(); 
 
          if ($assignment && $assignment['teacher_id'] == $teacher_id) {
-             return $assignment; // Return assignment if found and teacher matches
+             return $assignment; 
          }
-         return null; // Otherwise return null
+         return null;
     }
 
+    /**
+     * Get recent *assignments* for teacher dashboard.
+     */
     public function get_recent_assignments_for_teacher($teacher_id, $limit = 5) {
-        // Join with courses to filter by teacher_id
         $this->db->table($this->table . ' a')
                  ->select('a.assignment_id, a.title, a.due_date, c.title as course_title, c.course_id')
                  ->join('courses c', 'a.course_id = c.course_id')
                  ->where('c.teacher_id', $teacher_id)
-                 ->order_by('a.due_date', 'DESC') // Show most recent first
+                 ->where('a.type', 'assignment') // Only type 'assignment'
+                 ->order_by('a.due_date', 'DESC') 
                  ->limit($limit);
         
         return $this->db->get_all();
     }
 
+    /**
+     * Count pending *assignments and activities* for a student.
+     */
     public function count_pending_for_student($student_id) {
         $sql = "
             SELECT COUNT(a.assignment_id) as pending_count
@@ -86,6 +113,7 @@ class Assignment_Model extends Model {
             LEFT JOIN assignment_submissions s ON a.assignment_id = s.assignment_id AND s.student_id = e.student_id
             WHERE e.student_id = ?
             AND e.status = 'approved'
+            AND a.type IN ('assignment', 'activity') -- UPDATED
             AND a.due_date > NOW()
             AND s.submission_id IS NULL
         ";
@@ -94,31 +122,26 @@ class Assignment_Model extends Model {
     }
 
     /**
-     * Get upcoming assignment deadlines for a student.
-     *
-     * @param int $student_id
-     * @param int $limit
-     * @return array
+     * Get upcoming *assignments and activities* for a student dashboard.
      */
     public function get_upcoming_for_student($student_id, $limit = 5) {
         $sql = "
             SELECT 
-                a.assignment_id, a.title, a.due_date, c.title as course_title
+                a.assignment_id, a.title, a.due_date, c.title as course_title, a.type
             FROM 
                 assignments a
             JOIN 
                 enrollments e ON a.course_id = e.course_id
-            
-            -- THIS IS THE FIX: ADDED THE JOIN TO THE 'courses' TABLE --
             JOIN 
                 courses c ON a.course_id = c.course_id
-            
             LEFT JOIN 
                 assignment_submissions s ON a.assignment_id = s.assignment_id AND s.student_id = e.student_id
             WHERE 
                 e.student_id = ?
             AND 
                 e.status = 'approved'
+            AND 
+                a.type IN ('assignment', 'activity') -- UPDATED
             AND 
                 a.due_date > NOW()
             AND 
@@ -130,32 +153,53 @@ class Assignment_Model extends Model {
         return $this->db->raw($sql, [$student_id, $limit])->fetchAll(PDO::FETCH_ASSOC);
     }
     
+    /**
+     * Get all *assignments* for a student's "All Assignments" page.
+     */
     public function get_all_assignments_for_student($student_id) {
         $sql = "
             SELECT 
-                a.assignment_id, 
-                a.title, 
-                a.due_date, 
-                a.points,
-                c.title as course_title,
-                c.course_id,
-                s.submission_id, 
-                s.grade,
-                s.file_path,
-                s.submitted_at
-            FROM 
-                assignments a
-            JOIN 
-                courses c ON a.course_id = c.course_id
-            JOIN 
-                enrollments e ON a.course_id = e.course_id
-            LEFT JOIN 
-                assignment_submissions s ON a.assignment_id = s.assignment_id 
+                a.assignment_id, a.title, a.due_date, a.points,
+                c.title as course_title, c.course_id,
+                s.submission_id, s.grade, s.file_path, s.submitted_at
+            FROM assignments a
+            JOIN courses c ON a.course_id = c.course_id
+            JOIN enrollments e ON a.course_id = e.course_id
+            LEFT JOIN assignment_submissions s ON a.assignment_id = s.assignment_id 
                                         AND e.student_id = s.student_id
             WHERE 
                 e.student_id = ?
             AND 
                 e.status = 'approved'
+            AND 
+                a.type = 'assignment' -- Only type 'assignment'
+            ORDER BY 
+                a.due_date DESC
+        ";
+        
+        return $this->db->raw($sql, [$student_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * NEW: Get all *activities* for a student's "My Activities" page.
+     */
+    public function get_all_activities_for_student($student_id) {
+        $sql = "
+            SELECT 
+                a.assignment_id, a.title, a.due_date, a.points,
+                c.title as course_title, c.course_id,
+                s.submission_id, s.grade, s.file_path, s.submitted_at
+            FROM assignments a
+            JOIN courses c ON a.course_id = c.course_id
+            JOIN enrollments e ON a.course_id = e.course_id
+            LEFT JOIN assignment_submissions s ON a.assignment_id = s.assignment_id 
+                                        AND e.student_id = s.student_id
+            WHERE 
+                e.student_id = ?
+            AND 
+                e.status = 'approved'
+            AND 
+                a.type = 'activity' -- Only type 'activity'
             ORDER BY 
                 a.due_date DESC
         ";
@@ -163,26 +207,78 @@ class Assignment_Model extends Model {
         return $this->db->raw($sql, [$student_id])->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Get all *assignments* for a teacher's "All Assignments" page.
+     */
     public function get_all_for_teacher($teacher_id) {
         $sql = "
             SELECT 
-                a.assignment_id, 
-                a.title, 
-                a.due_date, 
-                a.points,
-                c.title as course_title,
-                c.course_id
-            FROM 
-                {$this->table} a
-            JOIN 
-                courses c ON a.course_id = c.course_id
+                a.assignment_id, a.title, a.due_date, a.points,
+                c.title as course_title, c.course_id
+            FROM {$this->table} a
+            JOIN courses c ON a.course_id = c.course_id
             WHERE 
                 c.teacher_id = ?
+            AND 
+                a.type = 'assignment' -- Only type 'assignment'
             ORDER BY 
                 a.due_date DESC
         ";
         
         return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
+     * NEW: Get all *activities* for a teacher's "All Activities" page.
+     */
+    public function get_all_activities_for_teacher($teacher_id) {
+        $sql = "
+            SELECT 
+                a.assignment_id, a.title, a.due_date, a.points,
+                c.title as course_title, c.course_id
+            FROM {$this->table} a
+            JOIN courses c ON a.course_id = c.course_id
+            WHERE 
+                c.teacher_id = ?
+            AND 
+                a.type = 'activity' -- Only type 'activity'
+            ORDER BY 
+                a.due_date DESC
+        ";
+        return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * NEW: Get all assignments and activities for a user's calendar
+     */
+    public function get_calendar_events_for_user($user_id, $role) {
+        if ($role === 'teacher') {
+            // Teacher: Get all activities/assignments from courses they OWN
+            $sql = "
+                SELECT a.assignment_id, a.title, a.due_date, a.type, a.course_id
+                FROM assignments a
+                JOIN courses c ON a.course_id = c.course_id
+                WHERE c.teacher_id = ?
+                AND a.type IN ('assignment', 'activity')
+                AND a.due_date IS NOT NULL
+            ";
+            return $this->db->raw($sql, [$user_id])->fetchAll(PDO::FETCH_ASSOC);
+            
+        } else if ($role === 'student') {
+            // Student: Get all activities/assignments from courses they are ENROLLED IN
+            $sql = "
+                SELECT a.assignment_id, a.title, a.due_date, a.type, a.course_id
+                FROM assignments a
+                JOIN enrollments e ON a.course_id = e.course_id
+                WHERE e.student_id = ?
+                AND e.status = 'approved'
+                AND a.type IN ('assignment', 'activity')
+                AND a.due_date IS NOT NULL
+            ";
+            return $this->db->raw($sql, [$user_id])->fetchAll(PDO::FETCH_ASSOC);
+        }
+        
+        return []; // Return empty for admin or other roles
     }
 }
 ?>

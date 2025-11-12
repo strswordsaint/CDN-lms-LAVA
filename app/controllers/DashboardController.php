@@ -19,6 +19,7 @@ class DashboardController extends Controller {
         $this->call->model('Course_Model');
         $this->call->model('Assignment_Model');
         $this->call->model('Assignment_Submission_Model');
+        $this->call->model('Site_Announcement_Model');
 
         $this->check_auth();
     }
@@ -40,6 +41,7 @@ class DashboardController extends Controller {
             'success_message' => $this->session->flashdata('success'),
             'error_message' => $this->session->flashdata('error'),
         ];
+        $data['site_announcements'] = $this->Site_Announcement_Model->get_all_with_admin();
 
         switch ($role) {
             case 'admin':

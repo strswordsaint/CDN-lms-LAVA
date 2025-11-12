@@ -23,6 +23,7 @@ class AdminController extends Controller {
         $this->call->model('Assignment_Attachment_Model');
         $this->call->model('Assignment_Submission_Model');
         $this->call->model('Resource_Model');
+        $this->call->model('Site_Announcement_Model');
         
         // --- ADD THIS LIBRARY ---
         $this->call->library('form_validation'); 
@@ -364,6 +365,60 @@ class AdminController extends Controller {
 
         $this->session->set_flashdata('success', 'Course and all related data deleted successfully.');
         redirect('/admin/courses');
+    }
+
+    /**
+     * Show the "Manage Site Announcements" page.
+    */
+    public function manage_site_announcements() {
+        $data['announcements'] = $this->Site_Announcement_Model->get_all_with_admin();
+        $data['page_title'] = 'Manage Site Announcements';
+        $data['success_message'] = $this->session->flashdata('success');
+        $data['error_message'] = $this->session->flashdata('error');
+
+        $this->call->view('/admin/manage_announcements', $data);
+    }
+
+    /**
+     * Store a new site-wide announcement.
+     */
+    public function store_site_announcement() {
+        $admin_id = $this->session->userdata('user_id');
+
+        $this->form_validation
+            ->name('title')->required('Title is required.')
+            ->name('content')->required('Content is required.');
+
+        if ($this->form_validation->run() == FALSE) {
+            $this->session->set_flashdata('error', 'Both title and content are required.');
+        } else {
+            $data = [
+                'admin_id' => $admin_id,
+                'title' => $this->io->post('title'),
+                'content' => $this->io->post('content')
+            ];
+
+            if ($this->Site_Announcement_Model->insert($data)) {
+                $this->session->set_flashdata('success', 'Site announcement posted successfully.');
+            } else {
+                $this->session->set_flashdata('error', 'Failed to post announcement.');
+            }
+        }
+
+        redirect('/admin/announcements');
+    }
+
+    /**
+     * Delete a site-wide announcement.
+     */
+    public function delete_site_announcement($announcement_id) {
+        // The model is simple, no extra security needed since only admins can be here.
+        if ($this->Site_Announcement_Model->delete($announcement_id)) {
+            $this->session->set_flashdata('success', 'Announcement deleted successfully.');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to delete announcement.');
+        }
+        redirect('/admin/announcements');
     }
     
 }

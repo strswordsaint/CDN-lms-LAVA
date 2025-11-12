@@ -17,6 +17,7 @@ class CourseController extends Controller {
         $this->call->model('Assignment_Model');
         $this->call->model('Resource_Model');
         $this->call->model('Assignment_Attachment_Model');
+        // REMOVED: Announcement_Model
 
         // Middleware: Check if user is logged in for all course actions
         $this->check_auth();
@@ -67,18 +68,44 @@ class CourseController extends Controller {
 
         $data['course'] = $course;
         
-        // --- NEW LOGIC FOR ATTACHMENTS ---
-        // 1. Get all assignments
-        $assignments = $this->Assignment_Model->get_assignments_by_course($course_id);
+        // --- NEW UNIFIED STREAM LOGIC ---
+        // 1. Get all posts (assignments AND announcements)
+        $posts = $this->Assignment_Model->get_posts_for_course_stream($course_id);
         
-        // 2. Loop through and get attachments for each one
-        foreach ($assignments as $key => $assignment) {
-            $assignments[$key]['attachments'] = $this->Assignment_Attachment_Model->get_for_assignment($assignment['assignment_id']);
+        $announcements = [];
+        $assignments = [];
+        
+        $all_posts = $this->Assignment_Model->get_posts_for_course_stream($course_id);
+        
+        $announcements_list = [];
+        $activities_list = [];
+        $assignments_list = [];
+        
+        // 2. Loop through, get attachments, and sort
+        foreach ($all_posts as $post) {
+            $post['attachments'] = $this->Assignment_Attachment_Model->get_for_assignment($post['assignment_id']);
+            
+            // Add to the main "Announcements" stream
+            $announcements_list[] = $post;
+            
+            // Add to the "Activities" tab if it's an activity
+            if ($post['type'] === 'activity') {
+                $activities_list[] = $post;
+            }
+            // Add to the "Assignments" tab if it's an assignment
+            else if ($post['type'] === 'assignment') {
+                $assignments_list[] = $post;
+            }
         }
-        $data['assignments'] = $assignments;
-        // --- END NEW LOGIC ---
         
+        // 3. Pass all three arrays to the view
+        $data['announcements'] = $announcements_list; // All posts
+        $data['activities'] = $activities_list;       // Only activities
+        $data['assignments'] = $assignments_list;     // Only assignments
+        
+        // This is still needed for the "Materials" tab
         $data['materials'] = $this->Resource_Model->get_for_course($course_id);
+
         $data['page_title'] = 'Manage Course: ' . htmlspecialchars($course['title']);
         $this->call->view('/courses/ShowCourse', $data);
     }
