@@ -87,19 +87,20 @@ $router->post('/assignment/unsubmit/{sub_id}', 'StudentController::unsubmit_assi
 
 // view assignments list
 $router->get('/my-assignments', 'StudentController::view_all_assignments')->name('student.assignments');
-// --- Student Quiz Taking (NEW) ---
+//Student Quiz Taking
 $router->get('/my-courses/{id}/quizzes', 'StudentController::view_quizzes')->where_number('id');
 $router->get('/quiz/{quiz_id}/take', 'StudentController::take_quiz')->where_number('quiz_id');
 $router->post('/quiz/{quiz_id}/submit', 'StudentController::submit_quiz')->where_number('quiz_id');
 $router->get('/quiz/{quiz_id}/results', 'StudentController::view_quiz_results')->where_number('quiz_id');
 
-// --- Student Discussions (NEW) ---
+//Student Discussions
 $router->get('/my-courses/{id}/discussions', 'StudentController::view_discussions')->where_number('id');
 $router->get('/discussion/{disc_id}', 'StudentController::view_discussion')->where_number('disc_id');
 $router->post('/discussion/{disc_id}/post', 'StudentController::post_reply')->where_number('disc_id');
-
-// --- Student Grades (NEW) ---
+//Student Grades
 $router->get('/my-grades', 'StudentController::view_grades');
+//calendar
+$router->get('/my-calendar', 'CalendarController::index')->name('student.calendar.index');
 // ===================================================================
 
 
@@ -109,7 +110,7 @@ $router->get('/my-grades', 'StudentController::view_grades');
 | -------------------------------------------------------------------
 */
 
-// --- Course Management (Works) ---
+//Course Management
 // List courses for the logged-in teacher
 $router->get('/courses', 'CourseController::index')->name('courses.index');
 // Show form to create a new course
@@ -128,29 +129,31 @@ $router->post('/courses/delete/{id}', 'CourseController::delete')->where_number(
 $router->get('/courses/{id}/assignments/create', 'AssignmentController::create')->where_number('id');
 // --- (This new route is for the "Post Announcement" form) ---
 $router->post('/courses/{id}/announcement/store', 'AssignmentController::store_announcement')->where_number('id');
-// --- (Add this for the new Teacher "All Activities" page) ---
+//All Activities
 $router->get('/activities/all', 'ActivityController::view_all')->name('activities.all');
-
-//// --- (Add this for the new Student "My Activities" page) ---
+//My Activities
 $router->get('/my-activities', 'StudentController::my_activities')->name('student.activities');
-
-// --- (Add this for the new Announcement/Activity post form) ---
+//Announcement/Activity post form
 $router->post('/courses/{id}/post/store', 'AssignmentController::store_announcement_or_activity')->where_number('id');
+//calendar integ
+$router->get('/calendar', 'CalendarController::index')->name('calendar.index');
+$router->get('/calendar/events', 'CalendarController::get_events')->name('calendar.events');
 
-// --- Assignment Management (NEW) ---
-// These routes are nested under a course
+
+// Assignment Management
+//routes nested under a course
 $router->post('/courses/{id}/assignments/store', 'AssignmentController::store')->where_number('id');
 $router->get('/assignments/edit/{assign_id}', 'AssignmentController::edit')->where_number('assign_id');
 $router->post('/assignments/update/{assign_id}', 'AssignmentController::update')->where_number('assign_id');
 $router->post('/assignments/delete/{assign_id}', 'AssignmentController::delete')->where_number('assign_id');
 $router->get('/assignments/{assign_id}/submissions', 'AssignmentController::view_submissions')->where_number('assign_id');
 $router->get('/assignments/all', 'AssignmentController::view_all')->name('assignments.all');
-// --- Assignment Grading (NEW) ---
+// --- Assignment Grading
 $router->get('/submissions/{sub_id}/grade', 'AssignmentController::show_grade_form')->where_number('sub_id');
 $router->post('/submissions/{sub_id}/grade', 'AssignmentController::process_grade')->where_number('sub_id');
 $router->get('/submissions/ungraded', 'AssignmentController::view_ungraded')->name('submissions.ungraded');
 
-// --- Quiz Management (NEW) ---
+//Quiz Management
 $router->get('/courses/{id}/quizzes/create', 'QuizController::create')->where_number('id');
 $router->post('/courses/{id}/quizzes/store', 'QuizController::store')->where_number('id');
 $router->get('/quizzes/{quiz_id}', 'QuizController::show')->where_number('quiz_id'); // Manage quiz (add questions)

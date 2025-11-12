@@ -247,5 +247,38 @@ class Assignment_Model extends Model {
         ";
         return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * NEW: Get all assignments and activities for a user's calendar
+     */
+    public function get_calendar_events_for_user($user_id, $role) {
+        if ($role === 'teacher') {
+            // Teacher: Get all activities/assignments from courses they OWN
+            $sql = "
+                SELECT a.assignment_id, a.title, a.due_date, a.type, a.course_id
+                FROM assignments a
+                JOIN courses c ON a.course_id = c.course_id
+                WHERE c.teacher_id = ?
+                AND a.type IN ('assignment', 'activity')
+                AND a.due_date IS NOT NULL
+            ";
+            return $this->db->raw($sql, [$user_id])->fetchAll(PDO::FETCH_ASSOC);
+            
+        } else if ($role === 'student') {
+            // Student: Get all activities/assignments from courses they are ENROLLED IN
+            $sql = "
+                SELECT a.assignment_id, a.title, a.due_date, a.type, a.course_id
+                FROM assignments a
+                JOIN enrollments e ON a.course_id = e.course_id
+                WHERE e.student_id = ?
+                AND e.status = 'approved'
+                AND a.type IN ('assignment', 'activity')
+                AND a.due_date IS NOT NULL
+            ";
+            return $this->db->raw($sql, [$user_id])->fetchAll(PDO::FETCH_ASSOC);
+        }
+        
+        return []; // Return empty for admin or other roles
+    }
 }
 ?>

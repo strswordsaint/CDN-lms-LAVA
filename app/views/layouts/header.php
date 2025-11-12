@@ -340,6 +340,14 @@
                             </a>
                         </li>
                         <li>
+                            <a href="<?php echo site_url('/calendar'); ?>" 
+                               title="Calendar"
+                               class="sidebar-nav-link <?php echo ($current_segment == 'calendar') ? 'active' : ''; ?>">
+                               <i class="fas fa-calendar-alt"></i>
+                               <span>Calendar</span>
+                            </a>
+                        </li>
+                        <li>
                             <a href="<?php echo site_url('/courses'); ?>" 
                                title="Manage Courses"
                                class="sidebar-nav-link <?php echo $is_courses_section ? 'active' : ''; ?>">
@@ -385,6 +393,14 @@
                                class="sidebar-nav-link <?php echo ($current_segment == 'dashboard') ? 'active' : ''; ?>">
                                <i class="fas fa-home"></i>
                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo site_url('/my-calendar'); ?>" 
+                               title="Calendar"
+                               class="sidebar-nav-link <?php echo ($current_segment == 'my-calendar') ? 'active' : ''; ?>">
+                               <i class="fas fa-calendar-alt"></i>
+                               <span>Calendar</span>
                             </a>
                         </li>
                         <li>
