@@ -184,8 +184,75 @@ class AdminController extends Controller {
         redirect('/admin/users');
     }
     
+    // --- MODIFIED: Show the "Edit User" page ---
     public function edit_user($user_id) {
-        $this->session->set_flashdata('error', 'Edit functionality is not yet implemented.');
+        $user = $this->User_Model->find($user_id);
+        
+        if (!$user) {
+            $this->session->set_flashdata('error', 'User not found.');
+            redirect('/admin/users');
+            return;
+        }
+
+        // Prevent admin from editing their own role (safety)
+        if ($user_id == $this->session->userdata('user_id')) {
+            $data['is_self'] = true;
+        } else {
+            $data['is_self'] = false;
+        }
+        
+        $data['user'] = $user;
+        $data['page_title'] = 'Edit User: ' . htmlspecialchars($user['first_name'] . ' ' . $user['last_name']);
+        $data['validation_errors'] = $this->session->flashdata('validation_errors');
+        
+        // We will create this new view file
+        $this->call->view('/admin/edit_user', $data);
+    }
+
+    // --- NEW: Process the "Edit User" form submission ---
+    public function update_user($user_id) {
+        // Find user first
+        $user = $this->User_Model->find($user_id);
+        if (!$user) {
+            $this->session->set_flashdata('error', 'User not found.');
+            redirect('/admin/users');
+            return;
+        }
+
+        // Validation
+        $this->form_validation
+            ->name('first_name')
+                ->required('First name is required.')
+            ->name('last_name')
+                ->required('Last name is required.')
+            ->name('role')
+                ->required('Role is required.')
+                ->in_list('student,teacher,admin', 'Invalid role selected.');
+
+        if ($this->form_validation->run() == FALSE) {
+            $this->session->set_flashdata('validation_errors', $this->form_validation->get_errors());
+            redirect('/admin/user/edit/' . $user_id);
+            return;
+        }
+        
+        $data = [
+            'first_name' => $this->io->post('first_name'),
+            'last_name' => $this->io->post('last_name'),
+            'role' => $this->io->post('role'),
+        ];
+
+        // Safety check: Prevent admin from changing their own role
+        if ($user_id == $this->session->userdata('user_id')) {
+            unset($data['role']); // Remove role from the update array
+        }
+        
+        // Update the user
+        if ($this->User_Model->update($user_id, $data)) {
+            $this->session->set_flashdata('success', 'User updated successfully.');
+        } else {
+            $this->session->set_flashdata('error', 'No changes were made or an error occurred.');
+        }
+
         redirect('/admin/users');
     }
 
@@ -419,6 +486,25 @@ class AdminController extends Controller {
             $this->session->set_flashdata('error', 'Failed to delete announcement.');
         }
         redirect('/admin/announcements');
+    }
+
+    /**
+     * Show the new General Reports page.
+     */
+    public function general_reports() {
+        $data['page_title'] = 'General Reports';
+
+        // 1. Get site-wide totals
+        $data['total_assignments'] = $this->Assignment_Model->count_all_assignments();
+        $data['total_submissions'] = $this->Assignment_Submission_Model->count_all_submissions();
+        $data['total_enrollments'] = $this->Enrollment_Model->count_all_enrollments('approved');
+        $data['total_courses'] = $this->Course_Model->count_all_courses();
+
+        // 2. Get master lists
+        $data['master_course_list'] = $this->Course_Model->get_all_courses_with_teacher();
+        $data['master_user_list'] = $this->User_Model->get_all_users(); // Re-use existing method
+
+        $this->call->view('/admin/general_reports', $data);
     }
     
 }

@@ -75,10 +75,35 @@ class User_Model extends Model {
         return $result['total'] ?? 0;
     }
 
+    // --- THIS IS THE CORRECTED FUNCTION ---
     public function get_users_by_role($role) {
-        return $this->filter(['role' => $role])
-                    ->order_by('created_at', 'DESC')
-                    ->get_all();
+        
+        if ($role === 'student') {
+            // Join to get a list of enrolled courses
+            $this->db->table($this->table . ' u')
+                     ->select('u.*, GROUP_CONCAT(c.title SEPARATOR ", ") as courses_list')
+                     ->where('u.role', $role);
+            $this->db->left_join('enrollments e', 'u.user_id = e.student_id AND e.status = "approved"');
+            $this->db->left_join('courses c', 'e.course_id = c.course_id');
+            
+        } else if ($role === 'teacher') {
+            // Join to get a list of handled courses
+            $this->db->table($this->table . ' u')
+                     ->select('u.*, GROUP_CONCAT(c.title SEPARATOR ", ") as courses_list')
+                     ->where('u.role', $role);
+            $this->db->left_join('courses c', 'u.user_id = c.teacher_id');
+        } else {
+            // For 'admin' or any other role, just select from the user table
+            $this->db->table($this->table . ' u')
+                     ->select('u.*')
+                     ->where('u.role', $role);
+        }
+        
+        // Group by user to make GROUP_CONCAT work
+        $this->db->group_by('u.user_id');
+        $this->db->order_by('u.created_at', 'DESC');
+        
+        return $this->db->get_all();
     }
 
     /**

@@ -20,3 +20,6 @@ runtime/*
 
 # Secret files
 app/config/google_secrets.php
+
+#env
+/.env

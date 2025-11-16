@@ -203,5 +203,7 @@ $router->post('/post/{id}/reply', 'ReplyController::store')->where_number('id');
 $router->get('/admin/announcements', 'AdminController::manage_site_announcements')->name('admin.announcements.index');
 $router->post('/admin/announcements/store', 'AdminController::store_site_announcement')->name('admin.announcements.store');
 $router->post('/admin/announcements/delete/{id}', 'AdminController::delete_site_announcement')->where_number('id')->name('admin.announcements.delete');
+//general reports
+$router->get('/admin/reports', 'AdminController::general_reports')->name('admin.reports');
 
 ?>

@@ -139,5 +139,14 @@ class Enrollment_Model extends Model {
         $result = $this->db->raw($sql, [$teacher_id])->fetch(PDO::FETCH_ASSOC);
         return $result['pending_count'] ?? 0;
     }
+
+    /**
+     * NEW: Count all enrollments, filtered by status.
+     */
+    public function count_all_enrollments($status = 'approved') {
+        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE status = ?";
+        $result = $this->db->raw($sql, [$status])->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
 }
 ?>

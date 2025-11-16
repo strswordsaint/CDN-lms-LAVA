@@ -77,6 +77,14 @@
             <i class="fas fa-arrow-right text-gray-400"></i>
         </a>
 
+        <a href="<?php echo site_url('/admin/reports'); ?>" class="p-4 flex justify-between items-center hover:bg-gray-50">
+            <div>
+                <h3 class="font-medium text-gray-800">General Reports</h3>
+                <p class="text-sm text-gray-500">View site-wide totals and master lists.</p>
+            </div>
+            <i class="fas fa-arrow-right text-gray-400"></i>
+        </a>
+
         <a href="<?php echo site_url('/admin/announcements'); ?>" class="p-4 flex justify-between items-center hover:bg-gray-50">
             <div>
                 <h3 class="font-medium text-gray-800">Post Announcements</h3>

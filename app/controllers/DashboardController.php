@@ -83,7 +83,7 @@ class DashboardController extends Controller {
 
             case 'student':
             default:
-                // (Student dashboard logic remains the same)
+                // (Student dashboard logic)
                 $student_id = $this->session->userdata('user_id');
                 $courses = $this->Enrollment_Model->get_student_courses($student_id, 'approved');
                 $pending_count = $this->Assignment_Model->count_pending_for_student($student_id);
@@ -94,9 +94,11 @@ class DashboardController extends Controller {
                     'pending_assignments' => $pending_count,
                 ];
                 $data['upcoming_assignments'] = $upcoming;
+                
+                $data['weekly_stats'] = $this->Assignment_Model->get_student_stats_for_week($student_id);
 
                 $this->call->view('/dashboards/student', $data);
-                break;
+            break;
         }
     }
 }

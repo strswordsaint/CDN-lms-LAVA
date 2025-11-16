@@ -8,6 +8,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -237,8 +240,13 @@
         $pending_assignment_count = 0;
         $ungraded_count = 0;
         $pending_enrollment_count = 0;
-        $admin_user_management_active = false; // Initialize
         $pending_activity_count = 0; // <-- NEW
+
+        // --- Admin Logic Variables ---
+        $is_admin_dashboard_active = false;
+        $is_admin_courses_active = false;
+        $is_admin_users_active = false;
+        $is_admin_reports_active = false;
 
         if ($is_logged_in) {
             $user_id = $LAVA->session->userdata('user_id');
@@ -257,7 +265,11 @@
                 $pending_enrollment_count = $LAVA->Enrollment_Model->count_pending_for_teacher($user_id);
             }
             else if ($user_role == 'admin') {
-                $admin_user_management_active = (segment(2) == 'admin' && segment(3) == 'users');
+                // === UPDATED ADMIN LOGIC ===
+                $is_admin_dashboard_active = ($current_segment == 'dashboard');
+                $is_admin_courses_active = (segment(2) == 'admin' && segment(3) == 'courses');
+                $is_admin_users_active = (segment(2) == 'admin' && segment(3) == 'users');
+                $is_admin_reports_active = (segment(2) == 'admin' && segment(3) == 'reports');
             }
         }
         // === END: Notification Data Fetching ===
@@ -302,12 +314,6 @@
                 <ul class="space-y-1">
                     
                     <?php if ($user_role == 'admin'): ?>
-                        <?php
-                            // === NEW ADMIN-SPECIFIC ACTIVE LOGIC ===
-                            $is_admin_dashboard_active = ($current_segment == 'dashboard');
-                            $is_admin_courses_active = ($current_segment == 'admin' && segment(3) == 'courses');
-                            $is_admin_users_active = ($current_segment == 'admin' && segment(3) == 'users');
-                        ?>
                         <li>
                             <a href="<?php echo site_url('/dashboard'); ?>" 
                                title="Dashboard"
@@ -330,6 +336,14 @@
                                class="sidebar-nav-link <?php echo $is_admin_users_active ? 'active' : ''; ?>">
                                <i class="fas fa-user-cog"></i>
                                <span>Users</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?php echo site_url('/admin/reports'); ?>" 
+                               title="General Reports"
+                               class="sidebar-nav-link <?php echo $is_admin_reports_active ? 'active' : ''; ?>">
+                               <i class="fas fa-chart-bar"></i>
+                               <span>Reports</span>
                             </a>
                         </li>
                         

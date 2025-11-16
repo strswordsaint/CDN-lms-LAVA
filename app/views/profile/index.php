@@ -22,9 +22,12 @@
     .tab-panel.active {
         display: block; /* Show only the active panel */
     }
+    
+    /* SweetAlert styles are no longer needed */
+
 </style>
 
-<div class="max-w-4xl mx-auto">
+<div class="max-w-6xl mx-auto">
 
     <h1 class="text-3xl font-bold text-neutral-900 mb-6">My Profile</h1>
 
@@ -48,9 +51,10 @@
             </ul>
         </div>
     <?php endif; ?>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <div class="md:col-span-1">
+        <div class="lg:col-span-1">
             <div class="card p-6 text-center">
                 <div class="flex-shrink-0 flex items-center justify-center w-24 h-24 bg-primary-700 rounded-full text-white font-bold text-4xl mx-auto">
                     <?php
@@ -63,14 +67,15 @@
                 <p class="text-sm text-neutral-500"><?php echo htmlspecialchars($email); ?></p>
                 
                 <a href="<?php echo site_url('auth/logout'); ?>" 
-                   class="btn btn-danger-sm mt-6 w-full text-base">
+                   id="sign-out-link"
+                   class="btn btn-danger-outline mt-6 w-full">
                    <i class="fas fa-sign-out-alt mr-2"></i>
                    Sign Out
                 </a>
                 </div>
         </div>
 
-        <div class="md:col-span-2">
+        <div class="lg:col-span-2">
             <div class="card">
                 <div class="border-b border-neutral-200">
                     <nav class="flex -mb-px px-6">
@@ -80,41 +85,67 @@
                 </div>
                 
                 <div class="p-6">
+                    
                     <div id="tab-panel-details" class="tab-panel active">
-                        <form action="<?php echo site_url('/profile/update_details'); ?>" method="POST" class="space-y-4">
+                        <h3 class="text-lg font-medium leading-6 text-neutral-900 mb-4">Account Information</h3>
+                        
+                        <form action="<?php echo site_url('/profile/update_details'); ?>" method="POST">
                             <?php echo csrf_field(); ?>
-                            <div>
-                                <label for="profile_first_name" class="block text-sm font-medium text-neutral-700 mb-1">First Name</label>
-                                <input type="text" id="profile_first_name" name="first_name" required class="form-input"
-                                       value="<?php echo htmlspecialchars($first_name ?? ''); ?>">
+                            
+                            <div class="bg-neutral-50 rounded-lg p-6 border border-neutral-200 space-y-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label for="profile_first_name" class="block text-sm font-medium text-neutral-700 mb-1">First Name</label>
+                                        <input type="text" id="profile_first_name" name="first_name" required class="form-input"
+                                               value="<?php echo htmlspecialchars($first_name ?? ''); ?>">
+                                    </div>
+                                    <div>
+                                        <label for="profile_last_name" class="block text-sm font-medium text-neutral-700 mb-1">Last Name</label>
+                                        <input type="text" id="profile_last_name" name="last_name" required class="form-input"
+                                               value="<?php echo htmlspecialchars($last_name ?? ''); ?>">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="profile_email" class="block text-sm font-medium text-neutral-700 mb-1">Email Address</label>
+                                    <input type="email" id="profile_email" name="email" readonly disabled
+                                           class="form-input bg-neutral-200 border-neutral-300 cursor-not-allowed"
+                                           value="<?php echo htmlspecialchars($email ?? ''); ?>">
+                                    <p class="mt-1 text-xs text-neutral-500">Email cannot be changed.</p>
+                                </div>
                             </div>
-                            <div>
-                                <label for="profile_last_name" class="block text-sm font-medium text-neutral-700 mb-1">Last Name</label>
-                                <input type="text" id="profile_last_name" name="last_name" required class="form-input"
-                                       value="<?php echo htmlspecialchars($last_name ?? ''); ?>">
-                            </div>
-                            <div class="text-right">
+                            
+                            <div class="text-right mt-6">
                                 <button type="submit" class="btn btn-primary">Save Changes</button>
                             </div>
                         </form>
                     </div>
                     
                     <div id="tab-panel-password" class="tab-panel">
-                        <form action="<?php echo site_url('/profile/update_password'); ?>" method="POST" class="space-y-4">
+                        <h3 class="text-lg font-medium leading-6 text-neutral-900 mb-4">Security</h3>
+
+                        <form action="<?php echo site_url('/profile/update_password'); ?>" method="POST">
                             <?php echo csrf_field(); ?>
-                            <div>
-                                <label for="profile_current_password" class="block text-sm font-medium text-neutral-700 mb-1">Current Password</label>
-                                <input type="password" id="profile_current_password" name="current_password" required class="form-input">
+                            
+                            <div class="bg-neutral-50 rounded-lg p-6 border border-neutral-200 space-y-5">
+                                <div>
+                                    <label for="profile_current_password" class="block text-sm font-medium text-neutral-700 mb-1">Current Password</label>
+                                    <input type="password" id="profile_current_password" name="current_password" required class="form-input">
+                                </div>
+
+                                <div class="border-t border-neutral-200"></div>
+
+                                <div>
+                                    <label for="profile_new_password" class="block text-sm font-medium text-neutral-700 mb-1">New Password</label>
+                                    <input type="password" id="profile_new_password" name="new_password" required class="form-input">
+                                    <p class="mt-1 text-xs text-neutral-500">Min 8 characters, with uppercase, lowercase, number, and symbol.</p>
+                                </div>
+                                <div>
+                                    <label for="profile_confirm_password" class="block text-sm font-medium text-neutral-700 mb-1">Confirm New Password</label>
+                                    <input type="password" id="profile_confirm_password" name="confirm_password" required class="form-input">
+                                </div>
                             </div>
-                            <div>
-                                <label for="profile_new_password" class="block text-sm font-medium text-neutral-700 mb-1">New Password</label>
-                                <input type="password" id="profile_new_password" name="new_password" required class="form-input">
-                            </div>
-                            <div>
-                                <label for="profile_confirm_password" class="block text-sm font-medium text-neutral-700 mb-1">Confirm New Password</label>
-                                <input type="password" id="profile_confirm_password" name="confirm_password" required class="form-input">
-                            </div>
-                            <div class="text-right">
+                            
+                            <div class="text-right mt-6">
                                 <button type="submit" class="btn btn-primary">Update Password</button>
                             </div>
                         </form>
@@ -148,6 +179,25 @@ $(document).ready(function() {
         // Click the password tab to activate it
         $('.tab-link[data-tab="password"]').click();
     <?php endif; ?>
+
+    // 3. === NEW SCRIPT: Trigger Custom Modal ===
+    $('#sign-out-link').on('click', function(e) {
+        // Prevent the link from navigating immediately
+        e.preventDefault(); 
+        var signOutUrl = $(this).attr('href'); // Get the URL from the link
+        
+        // Call the global function from footer.php
+        showConfirmationModal({
+            title: 'Sign Out',
+            body: '<p class="text-sm text-neutral-600">Are you sure you want to sign out of your account?</p>',
+            confirmText: 'Sign Out',
+            confirmClass: 'btn-danger-outline', // Use the outline button style
+            onConfirm: function() {
+                // This code runs when the user clicks "Sign Out"
+                window.location.href = signOutUrl;
+            }
+        });
+    });
 });
 </script>
 

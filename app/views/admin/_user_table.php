@@ -11,6 +11,9 @@
                     Email
                 </th>
                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                    Courses
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                     Registered On
                 </th>
                 <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-neutral-500 uppercase tracking-wider">
@@ -21,7 +24,7 @@
         <tbody class="bg-white divide-y divide-neutral-200">
             <?php if (empty($users)): ?>
                 <tr>
-                    <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-center text-neutral-500">
+                    <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-center text-neutral-500">
                         No users found in this category.
                     </td>
                 </tr>
@@ -33,6 +36,18 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
                             <?php echo htmlspecialchars($user['email']); ?>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                            <?php 
+                                // 'courses_list' is the alias we set in the model
+                                $courses = htmlspecialchars($user['courses_list'] ?? '');
+                                if (empty($courses)) {
+                                    echo '<span class="text-neutral-400">None</span>';
+                                } else {
+                                    // Truncate long lists
+                                    echo (strlen($courses) > 50) ? substr($courses, 0, 50) . '...' : $courses;
+                                }
+                            ?>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                             <?php echo date('M d, Y', strtotime($user['created_at'])); ?>

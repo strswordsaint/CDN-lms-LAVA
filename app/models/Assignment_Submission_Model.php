@@ -112,5 +112,14 @@ class Assignment_Submission_Model extends Model {
         
         return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * NEW: Count all submissions in the system.
+     */
+    public function count_all_submissions() {
+        $sql = "SELECT COUNT(*) as total FROM {$this->table}";
+        $result = $this->db->raw($sql)->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
 }
 ?>

@@ -280,5 +280,66 @@ class Assignment_Model extends Model {
         
         return []; // Return empty for admin or other roles
     }
+
+    /**
+     * NEW: Count all assignments (not activities or announcements).
+     */
+    public function count_all_assignments() {
+        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE type = 'assignment'";
+        $result = $this->db->raw($sql)->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
+
+    /**
+     * NEW: Get student's weekly stats for the dashboard chart.
+     * Counts items (assignments + activities) due from 7 days ago to 7 days from now.
+     */
+    public function get_student_stats_for_week($student_id) {
+        $sql = "
+            SELECT 
+                -- 1. Count items due in the next 7 days that are not submitted
+                COUNT(CASE 
+                    WHEN a.due_date BETWEEN NOW() AND NOW() + INTERVAL 7 DAY 
+                         AND s.submission_id IS NULL 
+                    THEN 1 
+                END) as upcoming,
+                
+                -- 2. Count items due in the last 7 days that ARE submitted or graded
+                COUNT(CASE 
+                    WHEN a.due_date BETWEEN NOW() - INTERVAL 7 DAY AND NOW() 
+                         AND s.submission_id IS NOT NULL 
+                    THEN 1 
+                END) as completed,
+                
+                -- 3. Count items due in the last 7 days that are NOT submitted
+                COUNT(CASE 
+                    WHEN a.due_date BETWEEN NOW() - INTERVAL 7 DAY AND NOW() 
+                         AND s.submission_id IS NULL 
+                    THEN 1 
+                END) as past_due
+            
+            FROM assignments a
+            
+            -- Join to get only courses the student is in
+            JOIN enrollments e 
+                ON a.course_id = e.course_id
+            
+            -- Left join to check submission status
+            LEFT JOIN assignment_submissions s 
+                ON a.assignment_id = s.assignment_id AND e.student_id = s.student_id
+            
+            WHERE 
+                e.student_id = ?
+            AND 
+                e.status = 'approved'
+            AND 
+                a.type IN ('assignment', 'activity')
+            AND
+                a.due_date BETWEEN (NOW() - INTERVAL 7 DAY) AND (NOW() + INTERVAL 7 DAY)
+        ";
+        
+        // Use fetch() instead of fetchAll() since we only expect one row
+        return $this->db->raw($sql, [$student_id])->fetch(PDO::FETCH_ASSOC);
+    }
 }
 ?>

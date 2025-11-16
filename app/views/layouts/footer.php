@@ -49,7 +49,93 @@
             </form>
         </div>
     </div>
+
+    <div id="confirmation-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40" style="display: none;"></div>
+    <div id="confirmation-modal" class="fixed top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-lg shadow-xl w-full max-w-md" style="display: none;">
+        
+        <div class="p-4 flex justify-end">
+            <button class="confirmation-modal-close-btn text-neutral-400 hover:text-neutral-600">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+        
+        <div id="confirmation-modal-body" class="px-6 pb-6">
+            <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0">
+                    <i id="confirmation-modal-icon" class=""></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-neutral-900" id="confirmation-modal-title"></h3>
+                    <p class="text-sm text-neutral-600 mt-1" id="confirmation-modal-text"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-4 bg-neutral-50 border-t flex justify-end space-x-3">
+            <button id="confirmation-modal-cancel-btn" class="btn btn-secondary confirmation-modal-close-btn">
+                Cancel
+            </button>
+            <button id="confirmation-modal-confirm-btn" class="btn btn-primary">
+                Confirm
+            </button>
+        </div>
+    </div>
     <script>
+        // === MODIFIED: Global Modal Functions ===
+        
+        // Function to show the modal with custom options
+        function showConfirmationModal(options) {
+            // Set default values
+            options = $.extend({
+                title: 'Confirm Action',
+                body: 'Are you sure you want to proceed?',
+                confirmText: 'Confirm',
+                cancelText: 'Cancel',
+                confirmClass: 'btn-primary', // e.g., 'btn-danger', 'btn-primary'
+                iconClass: 'fas fa-question-circle fa-3x text-primary-500', // Default icon
+                onConfirm: function() { } // Default empty callback
+            }, options);
+
+            // 1. Update modal content
+            $('#confirmation-modal-title').text(options.title);
+            $('#confirmation-modal-text').html(options.body); // Use .html() to allow simple <p> tags
+            
+            // 2. Update Icon
+            var $icon = $('#confirmation-modal-icon');
+            if (options.iconClass) {
+                $icon.attr('class', options.iconClass).show();
+            } else {
+                $icon.hide();
+            }
+            
+            // 3. Update buttons
+            var $confirmBtn = $('#confirmation-modal-confirm-btn');
+            $confirmBtn.text(options.confirmText);
+            // Reset classes and apply new one
+            $confirmBtn.attr('class', 'btn ' + options.confirmClass); 
+            
+            $('#confirmation-modal-cancel-btn').text(options.cancelText);
+            
+            // 4. Unbind any previous 'click' handlers to prevent multiple fires
+            $confirmBtn.off('click');
+            
+            // 5. Bind the new onConfirm callback
+            $confirmBtn.on('click', function() {
+                options.onConfirm();
+                closeConfirmationModal(); // Close modal after confirm
+            });
+            
+            // 6. Show the modal
+            $('#confirmation-modal-backdrop').show();
+            $('#confirmation-modal').show();
+        }
+
+        // Function to close the modal
+        function closeConfirmationModal() {
+            $('#confirmation-modal-backdrop').hide();
+            $('#confirmation-modal').hide();
+        }
+        // === END: Global Modal Functions ===
 
         $(document).ready(function() {
             // Flash message fade out
@@ -84,7 +170,7 @@
             });
             
             // ===================================
-            // === NEW SCRIPT FOR REPLIES MODAL ===
+            // === REPLIES MODAL SCRIPT ===
             // ===================================
 
             var $modal = $('#replies-modal');
@@ -139,7 +225,7 @@
                 });
             }
 
-            // 1. Open Modal
+            // 1. Open Replies Modal
             $(document).on('click', '.btn-replies', function() {
                 var postId = $(this).data('post-id');
                 var postTitle = $(this).data('post-title');
@@ -153,16 +239,15 @@
                 loadReplies(postId);
             });
 
-            // 2. Close Modal (Button or Backdrop)
-            function closeModal() {
+            // 2. Close Replies Modal
+            $('#replies-modal-close, #replies-modal-backdrop').on('click', function() {
                 $modal.hide();
                 $backdrop.hide();
                 $list.empty();
                 $textarea.val('');
                 $title.text('...');
                 $postIdInput.val('');
-            }
-            $('#replies-modal-close, #replies-modal-backdrop').on('click', closeModal);
+            });
 
             // 3. Submit New Reply
             $form.on('submit', function(e) {
@@ -191,8 +276,15 @@
                 });
             });
 
+            // === NEW: Confirmation Modal Close Triggers ===
+            // Close when clicking the 'X', the backdrop, or the 'Cancel' button
+            $('#confirmation-modal-backdrop, .confirmation-modal-close-btn').on('click', function() {
+                closeConfirmationModal();
+            });
+            
             // --- Helper Functions ---
             function escapeHTML(str) {
+                if (!str) return '';
                 return str.replace(/[&<>"']/g, function(m) {
                     return {
                         '&': '&amp;',

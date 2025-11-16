@@ -110,7 +110,13 @@ class Course_Model extends Model {
                 u.first_name, 
                 u.last_name,
                 (SELECT COUNT(*) FROM enrollments e 
-                 WHERE e.course_id = c.course_id AND e.status = 'approved') as student_count
+                 WHERE e.course_id = c.course_id AND e.status = 'approved') as student_count,
+                 
+                -- --- ADD THIS LINE ---
+                (SELECT COUNT(*) FROM assignments a 
+                 WHERE a.course_id = c.course_id AND a.type = 'assignment') as assignment_count
+                -- --- END ADDED LINE ---
+
             FROM 
                 {$this->table} c
             LEFT JOIN 
