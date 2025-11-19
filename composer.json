@@ -1,5 +1,16 @@
 {
+    "config": {
+        "vendor-dir": "app/vendor"
+    },
     "require": {
-        "google/apiclient": "^2.18"
+        "google/apiclient": "^2.15.0"
+    },
+    "scripts": {
+        "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
+    },
+    "extra": {
+        "google/apiclient-services": [
+            "Oauth2"
+        ]
     }
 }

@@ -2,7 +2,7 @@
 defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 // Make sure Composer's autoload is included
-require_once ROOT_DIR . 'vendor/autoload.php';
+require_once ROOT_DIR . 'app/vendor/autoload.php';
 
 /**
  * Controller: AuthController

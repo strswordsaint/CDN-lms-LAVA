@@ -23,3 +23,10 @@ app/config/google_secrets.php
 
 #env
 /.env
+
+
+#vendor
+/vendor/
+/app/vendor/
+app/vendor/
+composer.lock
