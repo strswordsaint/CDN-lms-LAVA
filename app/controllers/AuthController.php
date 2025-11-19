@@ -1,7 +1,7 @@
 <?php
 defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
-// Make sure Composer's autoload is included
+// Make sure Composer's autoload is includeD
 require_once ROOT_DIR . 'app/vendor/autoload.php';
 
 /**

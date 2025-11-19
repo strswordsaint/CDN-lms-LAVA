@@ -25,8 +25,7 @@ app/config/google_secrets.php
 /.env
 
 
-#vendor
+# Ignore the heavy libraries
 /vendor/
 /app/vendor/
 app/vendor/
-composer.lock
