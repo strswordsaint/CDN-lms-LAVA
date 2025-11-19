@@ -89,7 +89,7 @@ class CourseController extends Controller {
             $announcements_list[] = $post;
             
             // Add to the "Activities" tab if it's an activity
-            if ($post['type'] === 'activity') {
+            if ($post['type'] === 'activity' || $post['type'] === 'quiz') {
                 $activities_list[] = $post;
             }
             // Add to the "Assignments" tab if it's an assignment

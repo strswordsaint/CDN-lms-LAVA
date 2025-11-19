@@ -28,22 +28,27 @@ class Assignment_Model extends Model {
     }
 
     /**
-     * Get all posts (announcements, activities, assignments) for a course stream.
-     * Newest first. Also counts replies.
+     * Get all posts for a course stream, INCLUDING submission status for a specific student.
      */
-    public function get_posts_for_course_stream($course_id) {
+    public function get_posts_for_course_stream($course_id, $student_id = null) {
         $sql = "
             SELECT 
                 a.*,
-                (SELECT COUNT(*) FROM post_replies pr WHERE pr.assignment_id = a.assignment_id) as reply_count
+                (SELECT COUNT(*) FROM post_replies pr WHERE pr.assignment_id = a.assignment_id) as reply_count,
+                s.submission_id, 
+                s.grade, 
+                s.submitted_at
             FROM 
                 {$this->table} a
+            LEFT JOIN 
+                assignment_submissions s ON a.assignment_id = s.assignment_id AND s.student_id = ?
             WHERE 
                 a.course_id = ?
             ORDER BY
                 a.created_at DESC
         ";
-        return $this->db->raw($sql, [$course_id])->fetchAll(PDO::FETCH_ASSOC);
+        // Pass student_id first, then course_id (matching the ? positions)
+        return $this->db->raw($sql, [$student_id, $course_id])->fetchAll(PDO::FETCH_ASSOC);
     }
     
     /**

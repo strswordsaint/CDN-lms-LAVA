@@ -15,22 +15,16 @@ class Assignment_Submission_Model extends Model {
         'assignment_id',
         'student_id',
         'file_path',
-        'submitted_at', // Usually set by default in DB
+        'submitted_at', 
         'grade',
-        'feedback'
+        'feedback',
+        'quiz_result_json' // Ensure this is fillable
     ];
 
     public function __construct() {
         parent::__construct();
     }
 
-    /**
-     * Check if a student has already submitted for a specific assignment.
-     *
-     * @param int $student_id
-     * @param int $assignment_id
-     * @return object|null Returns the submission record if found, otherwise null.
-     */
     public function check_existing_submission($student_id, $assignment_id) {
         return $this->filter([
             'student_id' => $student_id,
@@ -39,11 +33,12 @@ class Assignment_Submission_Model extends Model {
     }
 
     public function get_submissions_for_assignment($assignment_id) {
-        $this->db->table($this->table . ' s') // Alias submissions table as 's'
-                 ->select('s.submission_id, s.student_id, s.file_path, s.submitted_at, s.grade, s.feedback, u.first_name, u.last_name, u.email')
-                 ->join('users u', 's.student_id = u.user_id') // Join users table aliased as 'u'
+        $this->db->table($this->table . ' s')
+                 // === UPDATED SELECT to include quiz_result_json ===
+                 ->select('s.submission_id, s.student_id, s.file_path, s.submitted_at, s.grade, s.feedback, s.quiz_result_json, u.first_name, u.last_name, u.email')
+                 ->join('users u', 's.student_id = u.user_id')
                  ->where('s.assignment_id', $assignment_id)
-                 ->order_by('s.submitted_at', 'DESC'); // Show newest submissions first
+                 ->order_by('s.submitted_at', 'DESC');
 
         return $this->db->get_all();
     }
@@ -55,7 +50,7 @@ class Assignment_Submission_Model extends Model {
                  ->join('assignments a', 's.assignment_id = a.assignment_id')
                  ->where('s.submission_id', $submission_id);
 
-        return $this->db->get(); // Get a single record
+        return $this->db->get(); 
     }
 
     public function update_grade($submission_id, $grade, $feedback) {
@@ -67,8 +62,6 @@ class Assignment_Submission_Model extends Model {
     }
 
     public function count_ungraded_for_teacher($teacher_id) {
-        // We need to join submissions -> assignments -> courses
-        // to find the ones owned by this teacher
         $sql = "
             SELECT COUNT(s.submission_id) as ungraded_count
             FROM {$this->table} s
@@ -113,9 +106,6 @@ class Assignment_Submission_Model extends Model {
         return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * NEW: Count all submissions in the system.
-     */
     public function count_all_submissions() {
         $sql = "SELECT COUNT(*) as total FROM {$this->table}";
         $result = $this->db->raw($sql)->fetch(PDO::FETCH_ASSOC);
