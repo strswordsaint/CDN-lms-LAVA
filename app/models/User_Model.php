@@ -15,7 +15,8 @@ class User_Model extends Model {
         'email',
         'password', // Password will be hashed in the controller before insert
         'role',
-        'status' // <-- ADDED
+        'status',
+        'suspension_reason'
     ];
 
     public function __construct()

@@ -68,7 +68,7 @@
                 
                 <a href="<?php echo site_url('auth/logout'); ?>" 
                    id="sign-out-link"
-                   class="btn btn-danger-outline mt-6 w-full">
+                   class="btn btn-danger mt-6 w-full">
                    <i class="fas fa-sign-out-alt mr-2"></i>
                    Sign Out
                 </a>
@@ -191,7 +191,7 @@ $(document).ready(function() {
             title: 'Sign Out',
             body: '<p class="text-sm text-neutral-600">Are you sure you want to sign out of your account?</p>',
             confirmText: 'Sign Out',
-            confirmClass: 'btn-danger-outline', // Use the outline button style
+            confirmClass: 'btn-danger', // <-- This class is now changed
             onConfirm: function() {
                 // This code runs when the user clicks "Sign Out"
                 window.location.href = signOutUrl;
