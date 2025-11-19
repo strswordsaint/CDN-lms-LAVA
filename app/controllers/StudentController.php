@@ -124,7 +124,7 @@ class StudentController extends Controller {
         
         // --- NEW 4-TAB LOGIC ---
         // 1. Get all posts (announcements, activities, assignments)
-        $all_posts = $this->Assignment_Model->get_posts_for_course_stream($course_id);
+        $all_posts = $this->Assignment_Model->get_posts_for_course_stream($course_id, $student_id);
         
         $announcements_list = [];
         $activities_list = [];
@@ -506,6 +506,33 @@ class StudentController extends Controller {
         
         // We will create this new view file next
         $this->call->view('/student/all_activities', $data);
+    }
+
+    /**
+     * View detailed results of a taken quiz.
+     */
+    public function view_quiz_results($quiz_id) {
+        $student_id = $this->session->userdata('user_id');
+        $this->call->model('Assignment_Submission_Model');
+
+        $quiz = $this->Assignment_Model->find($quiz_id);
+        if (!$quiz || $quiz['type'] != 'quiz') {
+            $this->session->set_flashdata('error', 'Quiz not found.');
+            redirect('/dashboard');
+        }
+
+        $submission = $this->Assignment_Submission_Model->check_existing_submission($student_id, $quiz_id);
+        if (!$submission) {
+            $this->session->set_flashdata('error', 'You have not taken this quiz yet.');
+            redirect('/quiz/' . $quiz_id);
+            return;
+        }
+
+        $data['quiz'] = $quiz;
+        $data['submission'] = $submission;
+        $data['page_title'] = 'Results: ' . $quiz['title'];
+        
+        $this->call->view('/student/quiz_results', $data);
     }
 
 }

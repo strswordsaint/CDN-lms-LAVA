@@ -295,7 +295,7 @@ class AssignmentController extends Controller {
 
         // === THIS IS THE FIX ===
         // Allow if the type is 'assignment' OR 'activity'
-        if (!$assignment || !in_array($assignment['type'], ['assignment', 'activity'])) {
+        if (!$assignment || !in_array($assignment['type'], ['assignment', 'activity', 'quiz'])) {
         // === END FIX ===
             $this->session->set_flashdata('error', 'Item not found or permission denied.');
             redirect('/courses');
@@ -358,11 +358,12 @@ class AssignmentController extends Controller {
         $grade = $this->io->post('grade');
         $feedback = $this->io->post('feedback');
 
+        // 1. Run Basic Validation (Numeric, Positive)
         $this->form_validation
             ->name('grade')
                 ->required('Grade is required.')
                 ->numeric('Grade must be a number.')
-                ->less_than_equal_to($submission['assignment_points'], 'Grade cannot exceed max points (' . $submission['assignment_points'] . ').')
+                // REMOVED: less_than_equal_to (We do this manually below)
                 ->greater_than_equal_to(0, 'Grade cannot be negative.');
                 
         if ($this->form_validation->run() == FALSE) {
@@ -371,6 +372,15 @@ class AssignmentController extends Controller {
             return;
         }
 
+        // 2. Manual Check for Max Points (Fixes the 100/100 bug)
+        // We allow floats (e.g. 95.5) but ensure it doesn't exceed max
+        if (floatval($grade) > floatval($submission['assignment_points'])) {
+             $this->session->set_flashdata('validation_errors', ['Grade cannot exceed max points (' . $submission['assignment_points'] . ').']);
+             redirect('/submissions/' . $submission_id . '/grade');
+             return;
+        }
+
+        // 3. Save
         if ($this->Assignment_Submission_Model->update_grade($submission_id, $grade, $feedback)) { 
              $this->session->set_flashdata('success', 'Grade and feedback saved successfully.');
         } else {

@@ -32,7 +32,7 @@
                             Submitted On
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                            File
+                            File / Response
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
                             Status
@@ -58,19 +58,26 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
                                     <?php echo date('M d, Y @ g:i A', strtotime($submission['submitted_at'])); ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-600 hover:text-primary-800">
-                                    <?php 
-                                        $files = json_decode($submission['file_path'], true);
-                                        if (is_array($files)) {
-                                            foreach($files as $index => $file) {
-                                                echo '<a href="'.base_url() . $file['file_path'].'" download class="hover:underline"><i class="fas fa-download mr-1"></i> '.htmlspecialchars($file['file_name']).'</a>';
-                                                if ($index < count($files) - 1) echo '<br>'; // Add a line break if more than one file
+                                
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-600">
+                                    <?php if (!empty($submission['quiz_result_json'])): ?>
+                                        <button type="button" onclick='showQuizResults(<?php echo json_encode($submission["quiz_result_json"]); ?>)' class="btn btn-sm btn-secondary">
+                                            <i class="fas fa-list-alt mr-1"></i> View Answers
+                                        </button>
+                                    <?php else: ?>
+                                        <?php 
+                                            $files = json_decode($submission['file_path'], true);
+                                            if (is_array($files)) {
+                                                foreach($files as $index => $file) {
+                                                    echo '<a href="'.base_url() . $file['file_path'].'" download class="hover:underline"><i class="fas fa-download mr-1"></i> '.htmlspecialchars($file['file_name']).'</a><br>';
+                                                }
+                                            } else if (!empty($submission['file_path'])) {
+                                                echo '<a href="'.base_url() . $submission['file_path'].'" download class="hover:underline"><i class="fas fa-download mr-1"></i> Download</a>';
+                                            } else {
+                                                echo '<span class="text-gray-400">No file</span>';
                                             }
-                                        } else if (!empty($submission['file_path'])) {
-                                            // Fallback for old single-file string
-                                            echo '<a href="'.base_url() . $submission['file_path'].'" download class="hover:underline"><i class="fas fa-download mr-1"></i> Download Submission</a>';
-                                        }
-                                    ?>
+                                        ?>
+                                    <?php endif; ?>
                                 </td>
                                 
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -102,5 +109,32 @@
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function showQuizResults(jsonString) {
+    try {
+        const results = JSON.parse(jsonString);
+        let html = '<div style="text-align: left; max-height: 400px; overflow-y: auto;">';
+        
+        for (const [question, answer] of Object.entries(results)) {
+            html += `<div class="mb-4 border-b pb-2">
+                        <p class="font-semibold text-neutral-800 mb-1">${question}</p>
+                        <p class="text-primary-700">${answer}</p>
+                     </div>`;
+        }
+        html += '</div>';
+
+        Swal.fire({
+            title: 'Student Answers',
+            html: html,
+            width: 600,
+            confirmButtonText: 'Close'
+        });
+    } catch (e) {
+        alert("Could not parse results.");
+    }
+}
+</script>
 
 <?php include 'app/views/layouts/footer.php'; ?>

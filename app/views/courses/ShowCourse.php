@@ -73,13 +73,12 @@
         margin-right: 0.375rem;
     }
     .post-footer {
-        @apply mt-4 pt-3 border-t border-neutral-200 flex justify-end;
+        @apply mt-4 pt-3 border-t border-neutral-200 flex justify-end items-center;
     }
     .btn-replies {
         @apply btn btn-secondary text-sm;
     }
     
-    /* Styles for the hidden activity fields */
     #activity-fields {
         display: none;
     }
@@ -179,6 +178,8 @@
                                 <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
                             <?php elseif ($post['type'] == 'activity'): ?>
                                 <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <?php elseif ($post['type'] == 'quiz'): ?>
+                                <div class="post-icon bg-purple-600"><i class="fas fa-puzzle-piece fa-lg"></i></div>
                             <?php else: ?>
                                 <div class="post-icon bg-neutral-500"><i class="fas fa-bullhorn fa-lg"></i></div>
                             <?php endif; ?>
@@ -186,16 +187,16 @@
                             <div class="post-content">
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <?php if ($post['type'] == 'assignment'): ?>
+                                        <?php if ($post['type'] == 'assignment' || $post['type'] == 'quiz'): ?>
                                             <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
                                         <?php elseif ($post['type'] == 'activity'): ?>
-                                             <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                             <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
                                         <?php else: ?>
                                             <span class="post-title"><?php echo htmlspecialchars($post['title']); ?></span>
                                         <?php endif; ?>
                                         
                                         <div class="post-meta">
-                                            <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
+                                            <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity' || $post['type'] == 'quiz'): ?>
                                                 Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
                                                 <span class="mx-1">&bull;</span>
                                                 <?php echo htmlspecialchars($post['points']); ?> pts
@@ -221,7 +222,24 @@
                                         <?php endforeach; ?>
                                     </ul>
                                 <?php endif; ?>
+                                
                                 <div class="post-footer">
+                                    <?php if($post['type'] == 'quiz'): ?>
+                                        <a href="<?php echo site_url('/quizzes/edit/' . $post['assignment_id']); ?>" class="btn btn-secondary mr-2">
+                                            <i class="fas fa-edit mr-1"></i> Edit Quiz
+                                        </a>
+                                    <?php elseif($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
+                                        <a href="<?php echo site_url('/assignments/edit/' . $post['assignment_id']); ?>" class="btn btn-secondary mr-2">
+                                            <i class="fas fa-edit mr-1"></i> Edit
+                                        </a>
+                                    <?php endif; ?>
+
+                                    <?php if($post['type'] != 'announcement'): ?>
+                                        <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="btn btn-secondary mr-2">
+                                            View Submissions
+                                        </a>
+                                    <?php endif; ?>
+
                                     <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
                                         <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
                                     </button>
@@ -234,17 +252,28 @@
         </div>
         
         <div id="tab-panel-activities" class="tab-panel">
+            <div class="text-right mb-4">
+                <a href="<?php echo site_url('/courses/' . $course['course_id'] . '/quizzes/create'); ?>" class="btn btn-success">
+                    <i class="fas fa-puzzle-piece mr-1"></i> Create New Quiz
+                </a>
+            </div>
+
             <div class="space-y-6">
                 <?php if (empty($activities)): ?>
-                    <p class="text-neutral-500 p-6 text-center card">No activities have been posted yet. Post one from the "Announcements" tab.</p>
+                    <p class="text-neutral-500 p-6 text-center card">No activities or quizzes have been posted yet.</p>
                 <?php else: ?>
                     <?php foreach ($activities as $post): ?>
                          <div class="post-card">
-                            <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <?php if($post['type'] == 'quiz'): ?>
+                                <div class="post-icon bg-purple-600"><i class="fas fa-puzzle-piece fa-lg"></i></div>
+                            <?php else: ?>
+                                <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <?php endif; ?>
+
                             <div class="post-content">
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                        <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
                                         <div class="post-meta">
                                             Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
                                             <span class="mx-1">&bull;</span>
@@ -269,56 +298,16 @@
                                     </ul>
                                 <?php endif; ?>
                                 <div class="post-footer">
-                                    <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="btn btn-secondary mr-2">
-                                        View Submissions
-                                    </a>
-                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
-                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <div id="tab-panel-activities" class="tab-panel">
-            <div class="space-y-6">
-                <?php if (empty($activities)): ?>
-                    <p class="text-neutral-500 p-6 text-center card">No activities have been posted yet. Post one from the "Announcements" tab.</p>
-                <?php else: ?>
-                    <?php foreach ($activities as $post): ?>
-                         <div class="post-card">
-                            <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
-                            <div class="post-content">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
-                                        <div class="post-meta">
-                                            Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
-                                            <span class="mx-1">&bull;</span>
-                                            <?php echo htmlspecialchars($post['points']); ?> pts
-                                        </div>
-                                    </div>
-                                    <form action="<?php echo site_url('/assignments/delete/' . $post['assignment_id']); ?>" method="POST" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this activity?');">
-                                        <?php echo csrf_field(); ?> 
-                                        <button type="submit" title="Delete Post" class="text-neutral-400 hover:text-error-600"><i class="fas fa-trash-alt"></i></button>
-                                    </form>
-                                </div>
-                                <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description"><?php echo nl2br(htmlspecialchars($post['description'])); ?></div>
-                                <?php endif; ?>
-                                <?php if (!empty($post['attachments'])): ?>
-                                    <ul class="post-attachments">
-                                        <?php foreach ($post['attachments'] as $file): ?>
-                                            <li class="post-attachment-item">
-                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php endif; ?>
-                                <div class="post-footer">
+                                    <?php if($post['type'] == 'quiz'): ?>
+                                        <a href="<?php echo site_url('/quizzes/edit/' . $post['assignment_id']); ?>" class="btn btn-secondary mr-2">
+                                            <i class="fas fa-edit mr-1"></i> Edit Quiz
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="<?php echo site_url('/assignments/edit/' . $post['assignment_id']); ?>" class="btn btn-secondary mr-2">
+                                            <i class="fas fa-edit mr-1"></i> Edit
+                                        </a>
+                                    <?php endif; ?>
+
                                     <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="btn btn-secondary mr-2">
                                         View Submissions
                                     </a>
@@ -347,6 +336,7 @@
                     <?php foreach ($assignments as $post): ?>
                         <div class="post-card">
                             <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
+
                             <div class="post-content">
                                 <div class="flex justify-between items-start">
                                     <div>
@@ -378,6 +368,7 @@
                                     <a href="<?php echo site_url('/assignments/edit/' . $post['assignment_id']); ?>" class="btn btn-secondary mr-2">
                                         <i class="fas fa-edit mr-1"></i> Edit
                                     </a>
+                                    
                                     <a href="<?php echo site_url('/assignments/' . $post['assignment_id'] . '/submissions'); ?>" class="btn btn-secondary mr-2">
                                         View Submissions
                                     </a>
@@ -428,7 +419,6 @@
             </div>
         </div>
 
-
     </div>
 </div>
 
@@ -475,18 +465,15 @@
         sessionStorage.setItem(storageKey, urlTab);
     }
 
-    // Default to 'announcements' if no tab is saved or found
     if (!savedTab) {
         savedTab = 'announcements';
     }
 
-    // Apply the active state
     $('.tab-link').removeClass('active');
     $('.tab-panel').removeClass('active');
     $('.tab-link[data-tab="' + savedTab + '"]').addClass('active');
     $('#tab-panel-' + savedTab).addClass('active');
 
-    // 2. On tab click, save the new tab
     $('.tab-link').on('click', function(e) {
         e.preventDefault();
         var tab = $(this).data('tab');

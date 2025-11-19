@@ -73,7 +73,7 @@
         margin-right: 0.375rem;
     }
     .post-footer {
-        @apply mt-4 pt-3 border-t border-neutral-200 flex justify-end;
+        @apply mt-4 pt-3 border-t border-neutral-200 flex justify-end items-center;
     }
     .btn-replies {
         @apply btn btn-secondary text-sm;
@@ -112,6 +112,8 @@
                                 <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
                             <?php elseif ($post['type'] == 'activity'): ?>
                                 <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
+                            <?php elseif ($post['type'] == 'quiz'): ?>
+                                <div class="post-icon bg-purple-600"><i class="fas fa-puzzle-piece fa-lg"></i></div>
                             <?php else: ?>
                                 <div class="post-icon bg-neutral-500"><i class="fas fa-bullhorn fa-lg"></i></div>
                             <?php endif; ?>
@@ -120,12 +122,14 @@
                                 <div>
                                     <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
                                         <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                    <?php elseif ($post['type'] == 'quiz'): ?>
+                                        <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
                                     <?php else: ?>
                                         <span class="post-title"><?php echo htmlspecialchars($post['title']); ?></span>
                                     <?php endif; ?>
 
                                     <div class="post-meta">
-                                        <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
+                                        <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity' || $post['type'] == 'quiz'): ?>
                                             Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
                                             <span class="mx-1">&bull;</span>
                                             <?php echo htmlspecialchars($post['points']); ?> pts
@@ -146,10 +150,30 @@
                                         <?php endforeach; ?>
                                     </ul>
                                 <?php endif; ?>
+                                
                                 <div class="post-footer">
-                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
-                                        View/Submit Work
-                                    </a>
+                                    <?php if ($post['type'] == 'quiz'): ?>
+                                        <?php if (!empty($post['submission_id'])): ?>
+                                            <div class="flex items-center mr-4">
+                                                <span class="text-success-700 font-bold mr-2">
+                                                    <i class="fas fa-check-circle"></i> 
+                                                    Score: <?php echo floatval($post['grade']); ?> / <?php echo floatval($post['points']); ?>
+                                                </span>
+                                                <a href="<?php echo site_url('/quiz/' . $post['assignment_id'] . '/results'); ?>" class="text-sm text-blue-600 hover:underline">
+                                                    View Details
+                                                </a>
+                                            </div>
+                                        <?php else: ?>
+                                            <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="btn btn-success mr-2">
+                                                <i class="fas fa-clock mr-1"></i> Take Quiz
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php elseif ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
+                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
+                                            <?php echo !empty($post['submission_id']) ? 'View Submission' : 'Submit Work'; ?>
+                                        </a>
+                                    <?php endif; ?>
+
                                     <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
                                         <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
                                     </button>
@@ -190,10 +214,30 @@
                                         <?php endforeach; ?>
                                     </ul>
                                 <?php endif; ?>
+                                
                                 <div class="post-footer">
-                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
-                                        View/Submit Work
-                                    </a>
+                                    <?php if ($post['type'] == 'quiz'): ?>
+                                        <?php if (!empty($post['submission_id'])): ?>
+                                            <div class="flex items-center mr-4">
+                                                <span class="text-success-700 font-bold mr-2">
+                                                    <i class="fas fa-check-circle"></i> 
+                                                    Score: <?php echo floatval($post['grade']); ?> / <?php echo floatval($post['points']); ?>
+                                                </span>
+                                                <a href="<?php echo site_url('/quiz/' . $post['assignment_id'] . '/results'); ?>" class="text-sm text-blue-600 hover:underline">
+                                                    View Details
+                                                </a>
+                                            </div>
+                                        <?php else: ?>
+                                            <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="btn btn-success mr-2">
+                                                <i class="fas fa-clock mr-1"></i> Take Quiz
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
+                                            <?php echo !empty($post['submission_id']) ? 'View Submission' : 'Submit Work'; ?>
+                                        </a>
+                                    <?php endif; ?>
+
                                     <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
                                         <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
                                     </button>
@@ -212,10 +256,19 @@
                 <?php else: ?>
                     <?php foreach ($assignments as $post): ?>
                         <div class="post-card">
-                            <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
+                            <?php if($post['type'] == 'quiz'): ?>
+                                <div class="post-icon bg-purple-600"><i class="fas fa-puzzle-piece fa-lg"></i></div>
+                            <?php else: ?>
+                                <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
+                            <?php endif; ?>
+
                             <div class="post-content">
                                 <div>
-                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                    <?php if ($post['type'] == 'quiz'): ?>
+                                         <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                    <?php else: ?>
+                                         <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
+                                    <?php endif; ?>
                                     <div class="post-meta">
                                         Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
                                         <span class="mx-1">&bull;</span>
@@ -234,10 +287,30 @@
                                         <?php endforeach; ?>
                                     </ul>
                                 <?php endif; ?>
+                                
                                 <div class="post-footer">
-                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
-                                        View/Submit Work
-                                    </a>
+                                    <?php if ($post['type'] == 'quiz'): ?>
+                                        <?php if (!empty($post['submission_id'])): ?>
+                                            <div class="flex items-center mr-4">
+                                                <span class="text-success-700 font-bold mr-2">
+                                                    <i class="fas fa-check-circle"></i> 
+                                                    Score: <?php echo floatval($post['grade']); ?> / <?php echo floatval($post['points']); ?>
+                                                </span>
+                                                <a href="<?php echo site_url('/quiz/' . $post['assignment_id'] . '/results'); ?>" class="text-sm text-blue-600 hover:underline">
+                                                    View Details
+                                                </a>
+                                            </div>
+                                        <?php else: ?>
+                                            <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="btn btn-success mr-2">
+                                                <i class="fas fa-clock mr-1"></i> Take Quiz
+                                            </a>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
+                                            <?php echo !empty($post['submission_id']) ? 'View Submission' : 'Submit Work'; ?>
+                                        </a>
+                                    <?php endif; ?>
+                                    
                                     <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
                                         <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
                                     </button>
