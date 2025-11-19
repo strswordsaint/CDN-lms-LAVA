@@ -506,6 +506,105 @@ class AdminController extends Controller {
 
         $this->call->view('/admin/general_reports', $data);
     }
+
+    //  ADMIN CREATE COURSE (With Teacher Pick)
+
+    public function create_course() {
+        // Get list of approved teachers for the dropdown
+        $data['teachers'] = $this->User_Model->get_users_by_role('teacher');
+        
+        $data['page_title'] = 'Create Course & Appoint Teacher';
+        $data['validation_errors'] = $this->session->flashdata('validation_errors');
+        $data['error_message'] = $this->session->flashdata('error');
+        
+        $this->call->view('/admin/create_course', $data);
+    }
+
+    public function store_course() {
+        $this->call->library('form_validation');
+        
+        $this->form_validation
+            ->name('title')->required('Title is required.')
+            ->name('teacher_id')->required('You must appoint a teacher.');
+
+        if ($this->form_validation->run() == FALSE) {
+            $this->session->set_flashdata('validation_errors', $this->form_validation->get_errors());
+            redirect('/admin/courses/create');
+        } else {
+            $teacher_id = $this->io->post('teacher_id');
+            
+            // Generate a unique enrollment code
+            $code = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+            
+            $data = [
+                'title' => $this->io->post('title'),
+                'description' => $this->io->post('description'),
+                'teacher_id' => $teacher_id, // Assign the selected teacher
+                'enrollment_code' => $code
+            ];
+
+            if ($this->Course_Model->insert($data)) {
+                $this->session->set_flashdata('success', 'Course created and teacher appointed successfully.');
+                redirect('/admin/courses');
+            } else {
+                $this->session->set_flashdata('error', 'Failed to create course.');
+                redirect('/admin/courses/create');
+            }
+        }
+    }
+
+    //  ADMIN SUSPEND / REACTIVATE USER
+
+    // Show the suspension form
+    public function suspend_user_form($user_id) {
+        $user = $this->User_Model->find($user_id);
+        if (!$user || $user['role'] == 'admin') {
+            $this->session->set_flashdata('error', 'Cannot suspend this user.');
+            redirect('/admin/users');
+        }
+
+        $data['user'] = $user;
+        $data['page_title'] = 'Suspend User: ' . $user['first_name'];
+        $this->call->view('/admin/suspend_user', $data);
+    }
+
+    // Process the suspension
+    public function process_suspension($user_id) {
+        $reason = $this->io->post('reason');
+        
+        if (empty(trim($reason))) {
+            $this->session->set_flashdata('error', 'A reason for suspension is required.');
+            redirect('/admin/user/suspend/' . $user_id);
+            return;
+        }
+
+        $update_data = [
+            'status' => 'suspended',
+            'suspension_reason' => $reason
+        ];
+
+        if ($this->User_Model->update($user_id, $update_data)) {
+            $this->session->set_flashdata('success', 'User suspended successfully.');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to suspend user.');
+        }
+        redirect('/admin/users');
+    }
+
+    // Reactivate a suspended user
+    public function reactivate_user($user_id) {
+        $update_data = [
+            'status' => 'approved',
+            'suspension_reason' => NULL // Clear the reason
+        ];
+
+        if ($this->User_Model->update($user_id, $update_data)) {
+            $this->session->set_flashdata('success', 'User account reactivated.');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to reactivate user.');
+        }
+        redirect('/admin/users');
+    }
     
 }
 ?>

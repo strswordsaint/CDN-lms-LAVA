@@ -3,39 +3,41 @@
 
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 
-<style>
-    /* Custom styles for FullCalendar */
+<style type="text/tailwindcss">
     #calendar {
-        max-width: 1100px;
-        margin: 0 auto;
-        background: #ffffff;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        @apply max-w-7xl mx-auto bg-white p-6 rounded-lg border border-neutral-200 shadow-md;
     }
-    /* Style the event links */
-    .fc-event {
-        cursor: pointer;
-        border: none !important;
-        font-weight: 500;
+
+    /* === NEW: Use your global .btn classes === */
+    .fc .fc-button-primary {
+        @apply btn btn-primary; /* Uses your class from header.php */
+        padding: 0.5rem 1rem !important; /* Add padding for a better look */
     }
-    .fc-event:hover {
-        opacity: 0.8;
+    
+    /* Make the 'today' button secondary */
+    .fc .fc-today-button {
+        @apply btn btn-secondary;
+        padding: 0.5rem 1rem !important;
+        /* We use !important to override FullCalendar's defaults */
+        background-color: #fff !important;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1 !important;
     }
+    .fc .fc-today-button:hover {
+        background-color: #f8fafc !important; /* neutral-50 */
+    }
+    
     /* Header (Jan 2024, etc) */
     .fc-toolbar-title {
-        color: #1e293b;
+        @apply text-2xl font-bold text-neutral-800;
     }
-    /* Buttons (prev, next, today) */
-    .fc .fc-button-primary {
-        background-color: #1d4ed8;
-        border-color: #1d4ed8;
-        font-weight: 600;
+
+    /* === NEW: Style list view === */
+    .fc-list-event {
+        @apply cursor-pointer;
     }
-    .fc .fc-button-primary:hover {
-        background-color: #1e3a8a;
-        border-color: #1e3a8a;
+    .fc-list-event:hover {
+        @apply bg-neutral-50;
     }
 </style>
 
@@ -52,25 +54,33 @@ document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     
     var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth', // Start with month view
+        // --- 1. CHANGE: Start with 'listWeek' view ---
+        initialView: 'listWeek', 
+        
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,listWeek' // Add week and list views
+            right: 'dayGridMonth,timeGridWeek,listWeek'
         },
-        // 3. This is where we load your data!
         events: '<?php echo site_url('/calendar/events'); ?>',
         
-        // 4. Handle clicking an event
         eventClick: function(info) {
-            info.jsEvent.preventDefault(); // don't let the browser navigate
+            info.jsEvent.preventDefault(); 
             if (info.event.url) {
-                window.open(info.event.url); // Open the link in a new tab
+                window.open(info.event.url);
             }
         },
+
+        // --- 2. NEW: Add these options to clean up the 'Month' view ---
+        eventTimeFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            meridiem: 'short' // This will show "11:59p"
+        },
+        eventDisplay: 'list-item', // Use 'dot' style for timed events in month view
+        dayMaxEvents: true, // This is good! It creates the "+ more" link
         
-        editable: false, // Don't allow dragging
-        dayMaxEvents: true, // allow "more" link when too many events
+        editable: false
     });
     
     calendar.render();

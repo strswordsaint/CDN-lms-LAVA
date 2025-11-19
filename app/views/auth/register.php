@@ -194,7 +194,7 @@
             </div>
 
             <button type="submit"
-                    class="w-full btn-primary-auth text-white font-bold py-2.5 px-4 rounded-md focus:outline-none focus:shadow-outline">
+              class="w-full btn-primary-auth text-white font-bold py-2.5 px-4 rounded-md focus:outline-none focus:shadow-outline">
                 Register
             </button>
         </form>

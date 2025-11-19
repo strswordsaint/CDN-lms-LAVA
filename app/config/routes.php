@@ -64,7 +64,8 @@ $router->get('/dashboard', 'DashboardController::index')->name('dashboard');
 $router->get('/profile', 'ProfileController::index')->name('profile.index');
 $router->post('/profile/update_details', 'ProfileController::update_details')->name('profile.update_details');
 $router->post('/profile/update_password', 'ProfileController::update_password')->name('profile.update_password');
-
+//about us
+$router->get('/about', 'PageController::about')->name('about');
 /*
 | -------------------------------------------------------------------
 | STUDENT ROUTES
@@ -175,6 +176,7 @@ $router->post('/enrollments/reject/{enrollment_id}', 'CourseController::reject_e
 $router->post('/enrollments/remove/{enrollment_id}', 'CourseController::remove_enrollment')->where_number('enrollment_id')->name('enrollments.remove');
 $router->post('/courses/leave/{id}', 'StudentController::leave_course')->where_number('id')->name('courses.leave');
 
+
 /*
 | -------------------------------------------------------------------
 | ADMIN ROUTES
@@ -205,5 +207,14 @@ $router->post('/admin/announcements/store', 'AdminController::store_site_announc
 $router->post('/admin/announcements/delete/{id}', 'AdminController::delete_site_announcement')->where_number('id')->name('admin.announcements.delete');
 //general reports
 $router->get('/admin/reports', 'AdminController::general_reports')->name('admin.reports');
+
+// 1. Create Course (Use :: instead of /)
+$router->get('/admin/courses/create', 'AdminController::create_course')->name('admin.courses.create');
+$router->post('/admin/courses/store', 'AdminController::store_course')->name('admin.courses.store');
+
+// 2. Suspend & Reactivate Users (Updated to use {id} style)
+$router->get('/admin/user/suspend/{id}', 'AdminController::suspend_user_form')->where_number('id')->name('admin.user.suspend');
+$router->post('/admin/user/process_suspension/{id}', 'AdminController::process_suspension')->where_number('id')->name('admin.user.process_suspend');
+$router->get('/admin/user/reactivate/{id}', 'AdminController::reactivate_user')->where_number('id')->name('admin.user.reactivate');
 
 ?>

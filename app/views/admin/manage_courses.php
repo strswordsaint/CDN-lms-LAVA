@@ -1,6 +1,13 @@
 <?php defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed'); ?>
 <?php include 'app/views/layouts/header.php'; ?>
 
+<div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-neutral-900"><?php echo $page_title ?? 'Manage All Courses'; ?></h1>
+        <a href="<?php echo site_url('/admin/courses/create'); ?>" class="btn btn-primary">
+            <i class="fas fa-plus mr-1"></i> Create Course
+        </a>
+    </div>
+
 <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <a href="<?php echo site_url('/dashboard'); ?>" class="text-sm text-primary-600 hover:underline mb-4 inline-block">
         <i class="fas fa-arrow-left mr-1"></i> Back to Dashboard

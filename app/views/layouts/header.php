@@ -82,7 +82,7 @@
         }
       }
     </script>
-    <style>
+    <style type="text/tailwindcss">
         /* Flash message styling (Updated to new colors) */
         .notice {
             padding: 0.75rem 1rem; border-radius: 0.375rem; margin-bottom: 1rem;
@@ -310,8 +310,8 @@
         
         <?php if ($is_logged_in): // ONLY show sidebar if logged in ?>
         <aside id="app-sidebar" class="w-20 bg-white border-r border-neutral-200 p-3 flex-shrink-0 overflow-y-auto z-10">
-            <nav>
-                <ul class="space-y-1">
+            <nav class="flex flex-col h-full">
+                <ul class="space-y-1 flex-grow">
                     
                     <?php if ($user_role == 'admin'): ?>
                         <li>
@@ -455,7 +455,16 @@
                         </li>
                     <?php endif; ?>
                 </ul>
-            </nav> <?php // ?>
+                
+                <div class="flex-shrink-0 pt-2 mt-auto border-t border-neutral-200">
+                    <a href="<?php echo site_url('/about'); ?>" 
+                    title="About Us"
+                    class="sidebar-nav-link h-[3.5rem] <?php echo (segment(2) == 'about') ? 'active' : ''; ?>">
+                    <i class="fas fa-info-circle text-lg mb-1"></i>
+                    <span>About Us</span>
+                    </a>
+                </div>
+                </nav> <?php // ?>
         </aside> <?php // ?>
         <?php endif; ?> <?php // ?>
 

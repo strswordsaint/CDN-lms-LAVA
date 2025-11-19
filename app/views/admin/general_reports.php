@@ -153,19 +153,33 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-neutral-200">
-                         <?php if(empty($master_user_list)): ?>
+                        <?php if(empty($master_user_list)): ?>
                             <tr><td colspan="4" class="p-4 text-center text-neutral-500">No users found.</td></tr>
                         <?php else: ?>
                             <?php foreach ($master_user_list as $user): ?>
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900"><?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-600"><?php echo htmlspecialchars($user['email']); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-500"><?php echo ucfirst(htmlspecialchars($user['role'])); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-neutral-900">
+                                        <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
+                                        <?php echo htmlspecialchars($user['email']); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral-500">
+                                        <?php echo ucfirst(htmlspecialchars($user['role'])); ?>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <?php if ($user['status'] == 'approved'): ?>
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success-100 text-success-800">Approved</span>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                Active
+                                            </span>
+                                        <?php elseif ($user['status'] == 'suspended'): ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                Suspended
+                                            </span>
                                         <?php else: ?>
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning-100 text-warning-800">Pending</span>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                <?php echo ucfirst(htmlspecialchars($user['status'])); ?>
+                                            </span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>

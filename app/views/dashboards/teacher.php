@@ -6,6 +6,7 @@
 <h1 class="text-3xl font-bold text-gray-800 mb-6">Teacher Dashboard</h1>
 <p class="text-lg text-gray-600 mb-8">Welcome, <?php echo htmlspecialchars($first_name); ?>!</p>
 
+
 <?php if (!empty($site_announcements)): ?>
     <div class="space-y-4 mb-8">
         <?php foreach (array_slice($site_announcements, 0, 2) as $post): // Show newest 2 ?>
