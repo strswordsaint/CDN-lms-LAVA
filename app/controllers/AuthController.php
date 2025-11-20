@@ -105,10 +105,11 @@ class AuthController extends Controller {
     }
 
     public function process_register() {
-         if (lava_instance()->session->has_userdata('user_id')) {
+        if (lava_instance()->session->has_userdata('user_id')) {
             redirect('/dashboard');
         }
 
+        // 1. Validation Rules
         lava_instance()->form_validation
             ->name('first_name')
                 ->required('First name is required.')
@@ -127,54 +128,62 @@ class AuthController extends Controller {
                 ->required('Password is required.')
                 ->min_length(8, 'Password must be at least 8 characters long.')
                 ->max_length(50, 'Password cannot exceed 50 characters.')
-                ->custom_pattern('(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*\W).*', 'Password must include uppercase, lowercase, number, and special character.')
+                // Updated Regex to match Client-Side JS (allows underscore as symbol)
+                ->custom_pattern('(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).*', 'Password must include uppercase, lowercase, number, and special character.')
             ->name('role')
                 ->required('Role selection is required.')
                 ->in_list('student,teacher,admin', 'Invalid role selected.');
 
+        // 2. Run Validation and Check Email
+        $validation_ran = lava_instance()->form_validation->run();
         $email = $this->io->post('email'); 
         $user_exists = $this->User_Model->filter(['email' => $email])->get();
-        $validation_ran = lava_instance()->form_validation->run();
+        
+        $errors = [];
 
-        if ($user_exists) {
-           $errors = lava_instance()->session->flashdata('validation_errors') ?: (lava_instance()->form_validation->get_errors() ?: []);
-           if (!in_array('This email address is already registered.', $errors)) {
-                $errors[] = 'This email address is already registered.';
-           }
-           lava_instance()->session->set_flashdata('validation_errors', array_unique($errors));
-           redirect('/auth/register');
-           return; 
+        // Collect Validation Errors
+        if ($validation_ran == FALSE) {
+            $errors = lava_instance()->form_validation->get_errors();
         }
 
+        // Collect Email Duplication Error
+        if ($user_exists) {
+            $errors[] = 'This email address is already registered.';
+        }
 
-        if ($validation_ran == FALSE) {
-             $errors = lava_instance()->session->flashdata('validation_errors') ?: [];
-             $form_errors = lava_instance()->form_validation->get_errors() ?: [];
-             $combined_errors = array_unique(array_merge($errors, $form_errors));
-             lava_instance()->session->set_flashdata('validation_errors', $combined_errors);
-             redirect('/auth/register');
+        // 3. IF ERRORS EXIST: FAIL AND RETURN INPUTS
+        if (!empty($errors)) {
+            // Make errors unique to avoid duplicates
+            lava_instance()->session->set_flashdata('validation_errors', array_unique($errors));
+            
+            // --- KEY FIX: Save the inputs so the form can refill them ---
+            lava_instance()->session->set_flashdata('old_inputs', $this->io->post()); 
+            
+            redirect('/auth/register');
+            exit;
+        }
+
+        // 4. Success - Insert User
+        $role = $this->io->post('role');
+        $hashed_password = password_hash($this->io->post('password'), PASSWORD_DEFAULT); 
+
+        $data = [
+            'first_name' => $this->io->post('first_name'), 
+            'last_name'  => $this->io->post('last_name'),  
+            'email'      => $email,
+            'password'   => $hashed_password,
+            'role'       => $role,       
+            'status'     => ($role === 'teacher') ? 'pending' : 'approved'
+        ];
+
+        if ($this->User_Model->insert($data)) {
+             lava_instance()->session->set_flashdata('success', 'Registration successful! Please login.');
+             redirect('/auth/login');
         } else {
-            $role = $this->io->post('role'); // Get the role
-            $hashed_password = password_hash($this->io->post('password'), PASSWORD_DEFAULT); 
-
-            $data = [
-                'first_name' => $this->io->post('first_name'), 
-                'last_name'  => $this->io->post('last_name'),  
-                'email'      => $email,
-                'password'   => $hashed_password,
-                'role'       => $role,       
-                'status'     => ($role === 'teacher') ? 'pending' : 'approved' // Set status
-            ];
-
-            $user_id = $this->User_Model->insert($data);
-
-            if ($user_id) {
-                 lava_instance()->session->set_flashdata('success', 'Registration successful! Please login.');
-                 redirect('/auth/login');
-            } else {
-                 lava_instance()->session->set_flashdata('error', 'Registration failed. Please try again.');
-                 redirect('/auth/register');
-            }
+             lava_instance()->session->set_flashdata('error', 'Registration failed. Please try again.');
+             // Save inputs here too just in case
+             lava_instance()->session->set_flashdata('old_inputs', $this->io->post());
+             redirect('/auth/register');
         }
     }
 
