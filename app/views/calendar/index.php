@@ -4,87 +4,75 @@
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 
 <style type="text/tailwindcss">
-    #calendar {
-        @apply max-w-7xl mx-auto bg-white p-6 rounded-lg border border-neutral-200 shadow-md;
+    /* ... (Keep Page Banner styles) ... */
+    .page-banner { background: white; border-bottom: 1px solid #e2e8f0; padding: 2rem 0; box-shadow: 0 1px 2px rgba(0,0,0,0.02); margin-bottom: 2rem; }
+
+    #calendar-wrapper {
+        @apply bg-white rounded-2xl shadow-sm border border-neutral-200 p-6;
     }
 
-    /* === NEW: Use your global .btn classes === */
-    .fc .fc-button-primary {
-        @apply btn btn-primary; /* Uses your class from header.php */
-        padding: 0.5rem 1rem !important; /* Add padding for a better look */
+    /* === CALENDAR FIXES === */
+    .fc-daygrid-day-frame {
+        /* Ensure the cell respects height and clips content */
+        @apply overflow-hidden !important;
+        min-height: 100px; /* Enforce minimum height */
     }
     
-    /* Make the 'today' button secondary */
-    .fc .fc-today-button {
-        @apply btn btn-secondary;
-        padding: 0.5rem 1rem !important;
-        /* We use !important to override FullCalendar's defaults */
-        background-color: #fff !important;
-        color: #334155 !important;
-        border: 1px solid #cbd5e1 !important;
+    .fc-daygrid-day-events {
+        /* Add scrolling if too many events */
+        @apply overflow-y-auto !important; 
+        max-height: 80px; /* Limit height of event area within cell */
+        margin-bottom: 2px;
+        /* Hide scrollbar for cleaner look */
+        scrollbar-width: none; 
     }
-    .fc .fc-today-button:hover {
-        background-color: #f8fafc !important; /* neutral-50 */
-    }
-    
-    /* Header (Jan 2024, etc) */
-    .fc-toolbar-title {
-        @apply text-2xl font-bold text-neutral-800;
-    }
+    .fc-daygrid-day-events::-webkit-scrollbar { display: none; }
 
-    /* === NEW: Style list view === */
-    .fc-list-event {
-        @apply cursor-pointer;
+    /* Event "Chip" Styling */
+    .fc-daygrid-event {
+        @apply mx-1 mt-1 mb-1 !important; 
+        @apply rounded-md shadow-sm border-0 !important;
+        @apply text-xs font-medium cursor-pointer !important;
     }
-    .fc-list-event:hover {
-        @apply bg-neutral-50;
+    
+    .fc-event-main {
+        @apply px-2 py-1 truncate !important;
     }
 </style>
 
-<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <h1 class="text-2xl font-bold text-neutral-900 mb-6"><?php echo $page_title ?? 'Calendar'; ?></h1>
-    
-    <div id='calendar'></div>
+<div class="page-banner">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 banner-content">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-extrabold text-neutral-900 tracking-tight mb-1">Calendar</h1>
+                <p class="text-neutral-500 font-medium">Your schedule.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div id="calendar-wrapper">
+        <div id='calendar'></div>
+    </div>
 </div>
 
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
-    
     var calendar = new FullCalendar.Calendar(calendarEl, {
-        // --- 1. CHANGE: Start with 'listWeek' view ---
-        initialView: 'listWeek', 
-        
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,listWeek'
-        },
+        initialView: 'dayGridMonth',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek' },
+        height: 'auto',
+        dayMaxEvents: false, // We handle overflow with CSS scroll now
         events: '<?php echo site_url('/calendar/events'); ?>',
-        
         eventClick: function(info) {
             info.jsEvent.preventDefault(); 
-            if (info.event.url) {
-                window.open(info.event.url);
-            }
-        },
-
-        // --- 2. NEW: Add these options to clean up the 'Month' view ---
-        eventTimeFormat: {
-            hour: 'numeric',
-            minute: '2-digit',
-            meridiem: 'short' // This will show "11:59p"
-        },
-        eventDisplay: 'list-item', // Use 'dot' style for timed events in month view
-        dayMaxEvents: true, // This is good! It creates the "+ more" link
-        
-        editable: false
+            if (info.event.url) window.location.href = info.event.url;
+        }
     });
-    
     calendar.render();
 });
 </script>
-
 <?php include 'app/views/layouts/footer.php'; ?>

@@ -2,142 +2,269 @@
 <?php include 'app/views/layouts/header.php'; ?>
 
 <style>
-    /* Styles for the active and inactive tabs */
-    .tab-link {
-        padding: 0.5rem 1rem;
-        font-weight: 600;
-        color: #64748b; /* neutral-500 */
-        border-bottom: 2px solid transparent;
-        cursor: pointer;
-        /* Added for dot positioning */
-        display: inline-flex;
-        align-items: center;
+    /* === Modern Variables & Reset === */
+    :root {
+        --bg-body: #f1f5f9; 
+        --primary-soft: #eff6ff;
+        --primary-border: #bfdbfe;
+        --primary-text: #1d4ed8;
     }
-    .tab-link.active {
-        color: #1d4ed8; /* primary-700 */
-        border-bottom-color: #1d4ed8;
-    }
-    .tab-panel {
-        display: none; /* Hide all panels by default */
-    }
-    .tab-panel.active {
-        display: block; /* Show only the active panel */
+    
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Inter', sans-serif;
     }
 
-    /* === NEW: CSS For Tab Dot === */
+    /* === PAGE BANNER === */
+    .page-banner {
+        background: white;
+        position: relative;
+        overflow: hidden;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 2rem 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        margin-bottom: 2rem;
+    }
+    
+    .banner-decoration {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.6;
+        z-index: 0;
+    }
+    .decoration-1 { top: -60%; left: -10%; width: 500px; height: 500px; background: #dbeafe; }
+    .decoration-2 { bottom: -60%; right: -5%; width: 400px; height: 400px; background: #e0e7ff; }
+
+    .banner-content {
+        position: relative;
+        z-index: 10;
+    }
+
+    /* === STICKY NAVIGATION === */
+    .sticky-tabs-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: rgba(241, 245, 249, 0.95);
+        backdrop-filter: blur(8px);
+        padding: 1rem 0;
+        border-bottom: 1px solid transparent;
+    }
+
+    .nav-pills {
+        display: flex;
+        gap: 0.75rem;
+        overflow-x: auto;
+        padding: 0.25rem;
+    }
+
+    .tab-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.6rem 1.5rem;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #64748b;
+        background: white;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .tab-pill:hover {
+        border-color: #cbd5e1;
+        transform: translateY(-1px);
+    }
+
+    .tab-pill.active {
+        background-color: #2563eb; /* Primary Blue */
+        color: white;
+        border-color: #2563eb;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
     .tab-dot {
         display: inline-block;
-        width: 0.5rem; /* 8px */
-        height: 0.5rem; /* 8px */
-        background-color: #ef4444; /* error-500 */
-        border-radius: 9999px;
-        margin-left: 0.375rem; /* 6px */
+        width: 8px;
+        height: 8px;
+        background-color: #ef4444;
+        border-radius: 50%;
+        margin-left: 8px;
+        box-shadow: 0 0 0 2px white;
+    }
+
+    /* === HIGH VISIBILITY CARD STYLE === */
+    .hunt-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        gap: 1.5rem;
+        align-items: flex-start;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hunt-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        background-color: #3b82f6; /* Blue Accent */
+    }
+
+    .hunt-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1); 
+        border-color: #3b82f6;
+    }
+
+    .hunt-icon-box {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        background-color: #eff6ff; 
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+    }
+
+    .tab-panel { display: none; animation: fadeIn 0.3s ease-out; }
+    .tab-panel.active { display: block; }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 
-<div class="flex justify-between items-center mb-4">
-    <h1 class="text-2xl font-bold text-neutral-900"><?php echo $page_title ?? 'All Assignments'; ?></h1>
+<div class="page-banner">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold text-neutral-900 tracking-tight mb-1">
+                    <?php echo $page_title ?? 'All Assignments'; ?>
+                </h1>
+                <p class="text-neutral-500 font-medium">Track your assignments and deadlines.</p>
+            </div>
+            <div class="bg-blue-50 text-blue-700 px-5 py-2.5 rounded-xl border border-blue-200 font-bold shadow-sm flex items-center">
+                <i class="fas fa-tasks mr-2.5 text-lg"></i> 
+                <span>Task Manager</span>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="border-b border-neutral-300 mb-6">
-    <nav class="flex -mb-px">
-        <a class="tab-link active" data-tab="upcoming">
-            Upcoming
-            <?php if (count($assignments_upcoming) > 0): ?>
-                <span class="tab-dot"></span>
+<div class="sticky-tabs-wrapper">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="nav-pills">
+            <button class="tab-pill active" data-tab="upcoming">
+                Upcoming
+                <?php if (count($assignments_upcoming) > 0): ?>
+                    <span class="tab-dot"></span>
+                <?php endif; ?>
+            </button>
+            <button class="tab-pill" data-tab="past-due">
+                Past Due
+                <?php if (count($assignments_past_due) > 0): ?>
+                    <span class="tab-dot"></span>
+                <?php endif; ?>
+            </button>
+            <button class="tab-pill" data-tab="completed">
+                Completed
+            </button>
+        </nav>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div class="max-w-5xl mx-auto">
+
+        <div id="tab-panel-upcoming" class="tab-panel active">
+            <?php if (empty($assignments_upcoming)): ?>
+                <div class="bg-white rounded-2xl border-2 border-dashed border-neutral-300 p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-50 text-neutral-400 mb-4">
+                        <i class="fas fa-check-circle text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-neutral-900">No Pending Assignments</h3>
+                    <p class="text-neutral-500">You are up to date!</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($assignments_upcoming as $assignment): ?>
+                    <?php include 'app/views/student/all_assignment_item.php'; ?>
+                <?php endforeach; ?>
             <?php endif; ?>
-        </a>
-        <a class="tab-link" data-tab="past-due">
-            Past due
-            <?php if (count($assignments_past_due) > 0): ?>
-                <span class="tab-dot"></span>
+        </div>
+
+        <div id="tab-panel-past-due" class="tab-panel">
+            <?php if (empty($assignments_past_due)): ?>
+                <div class="bg-white rounded-2xl border-2 border-dashed border-neutral-300 p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 text-green-500 mb-4">
+                        <i class="fas fa-thumbs-up text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-neutral-900">All Clear!</h3>
+                    <p class="text-neutral-500">No overdue assignments.</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($assignments_past_due as $assignment): ?>
+                     <?php include 'app/views/student/all_assignment_item.php'; ?>
+                <?php endforeach; ?>
             <?php endif; ?>
-        </a>
-        <a class="tab-link" data-tab="completed">
-            Completed
-        </a>
-    </nav>
-</div>
-
-<div>
-    <div id="tab-panel-upcoming" class="tab-panel active">
-        <div class="bg-white shadow-md rounded-lg border border-neutral-200">
-            <div class="divide-y divide-neutral-200">
-                <?php if (empty($assignments_upcoming)): ?>
-                    <p class="text-neutral-500 p-6 text-center">No upcoming assignments. You're all caught up!</p>
-                <?php else: ?>
-                    <?php foreach ($assignments_upcoming as $assignment): ?>
-                        <?php include 'app/views/student/all_assignment_item.php'; // Use the new student item ?>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
         </div>
-    </div>
 
-    <div id="tab-panel-past-due" class="tab-panel">
-        <div class="bg-white shadow-md rounded-lg border border-neutral-200">
-            <div class="divide-y divide-neutral-200">
-                <p class="text-xs text-neutral-500 p-4 bg-neutral-50">This list shows assignments that are past their due date and have not been submitted.</p>
-                <?php if (empty($assignments_past_due)): ?>
-                    <p class="text-neutral-500 p-6 text-center">No assignments are past due.</p>
-                <?php else: ?>
-                    <?php foreach ($assignments_past_due as $assignment): ?>
-                         <?php include 'app/views/student/all_assignment_item.php'; // Use the new student item ?>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+        <div id="tab-panel-completed" class="tab-panel">
+            <?php if (empty($assignments_completed)): ?>
+                <div class="text-center py-12 text-neutral-400 font-medium">No completed assignments yet.</div>
+            <?php else: ?>
+                <?php foreach ($assignments_completed as $assignment): ?>
+                     <?php include 'app/views/student/all_assignment_item.php'; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
-    </div>
 
-    <div id="tab-panel-completed" class="tab-panel">
-        <div class="bg-white shadow-md rounded-lg border border-neutral-200">
-            <div class="divide-y divide-neutral-200">
-                 <p class="text-xs text-neutral-500 p-4 bg-neutral-50">This list shows all your graded assignments, or submitted assignments that are past due.</p>
-                <?php if (empty($assignments_completed)): ?>
-                    <p class="text-neutral-500 p-6 text-center">No assignments have been completed yet.</p>
-                <?php else: ?>
-                    <?php foreach ($assignments_completed as $assignment): ?>
-                         <?php include 'app/views/student/all_assignment_item.php'; // Use the new student item ?>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
     </div>
 </div>
+
+<?php include 'app/views/layouts/footer.php'; ?>
 
 <script>
 $(document).ready(function() {
-    var storageKey = 'studentActiveTab'; // Unique key for student assignment page
+    var storageKey = 'studentAssignmentTab';
 
-    // 1. On page load, check for a saved tab
     var savedTab = sessionStorage.getItem(storageKey);
     if (savedTab) {
-        // Remove default active state
-        $('.tab-link').removeClass('active');
+        $('.tab-pill').removeClass('active');
         $('.tab-panel').removeClass('active');
-        
-        // Apply the saved active state
-        $('.tab-link[data-tab="' + savedTab + '"]').addClass('active');
+        $('.tab-pill[data-tab="' + savedTab + '"]').addClass('active');
         $('#tab-panel-' + savedTab).addClass('active');
     }
 
-    // 2. On tab click, save the new tab
-    $('.tab-link').on('click', function(e) {
+    $('.tab-pill').on('click', function(e) {
         e.preventDefault();
-        
         var tab = $(this).data('tab');
-        
-        // Save the clicked tab to session storage
         sessionStorage.setItem(storageKey, tab);
         
-        // Update tab link active state
-        $('.tab-link').removeClass('active');
+        $('.tab-pill').removeClass('active');
         $(this).addClass('active');
         
-        // Show/hide tab panels
         $('.tab-panel').removeClass('active');
         $('#tab-panel-' + tab).addClass('active');
+        
+        $('html, body').animate({ scrollTop: 0 }, 300);
     });
 });
 </script>
-<?php include 'app/views/layouts/footer.php'; ?>

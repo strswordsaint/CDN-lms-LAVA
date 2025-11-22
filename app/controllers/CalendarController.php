@@ -10,17 +10,13 @@ class CalendarController extends Controller {
     public function __construct() {
         parent::__construct();
         $this->call->database();
-        $this->call->model('Assignment_Model'); // We need this
+        $this->call->model('Assignment_Model');
         $this->call->library('session');
         $this->call->helper('url');
         
-        // Secure this entire controller
         $this->check_auth();
     }
 
-    /**
-     * Middleware to check if user is logged in
-     */
     protected function check_auth() {
         if (!$this->session->has_userdata('user_id')) {
              $this->session->set_flashdata('error', 'Please login to access this section.');
@@ -29,50 +25,56 @@ class CalendarController extends Controller {
         }
     }
 
-    /**
-     * Show the calendar view page
-     */
     public function index() {
         $data['page_title'] = 'My Calendar';
         $this->call->view('/calendar/index', $data);
     }
 
-    /**
-     * Provides the JSON data feed for FullCalendar
-     */
     public function get_events() {
         $user_id = $this->session->userdata('user_id');
         $role = $this->session->userdata('role');
         
-        // Get events from the model
         $events = $this->Assignment_Model->get_calendar_events_for_user($user_id, $role);
         
         $calendar_events = [];
         foreach($events as $event) {
             
-            // Determine the URL
+            // Determine URL based on role
             $url = '';
             if($role == 'teacher') {
-                $url = site_url('/courses/show/' . $event['course_id'] . '?tab=' . $event['type'] . 's');
+                // Teacher goes to grading/edit view or main list
+                 $url = site_url('/assignments/' . $event['assignment_id'] . '/submissions');
             } else {
-                $url = site_url('/assignment/' . $event['assignment_id']);
+                // Student goes to submit/view view
+                $isQuiz = ($event['type'] == 'quiz');
+                $url = site_url(($isQuiz ? '/quiz/' : '/assignment/') . $event['assignment_id']);
             }
             
-            // Determine color based on type
-            $color = '#1d4ed8'; // Default blue for assignment
+            // === NEW: Color Coding to match Dashboard ===
+            $color = '#3b82f6'; // Default Blue (Assignment)
+            $borderColor = '#2563eb';
+            
             if($event['type'] == 'activity') {
-                $color = '#f59e0b'; // Yellow for activity
+                $color = '#f59e0b'; // Amber (Activity)
+                $borderColor = '#d97706';
+            } elseif($event['type'] == 'quiz') {
+                $color = '#9333ea'; // Purple (Quiz)
+                $borderColor = '#7e22ce';
             }
             
             $calendar_events[] = [
                 'title' => $event['title'],
-                'start' => $event['due_date'], // FullCalendar understands this
+                'start' => $event['due_date'],
                 'url'   => $url,
-                'color' => $color
+                'backgroundColor' => $color,
+                'borderColor' => $borderColor,
+                'textColor' => '#ffffff',
+                'extendedProps' => [
+                    'type' => ucfirst($event['type'])
+                ]
             ];
         }
 
-        // Send the JSON response
         header('Content-Type: application/json');
         echo json_encode($calendar_events);
         exit;

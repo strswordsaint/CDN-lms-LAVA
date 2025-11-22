@@ -22,9 +22,6 @@
     .tab-panel.active {
         display: block; /* Show only the active panel */
     }
-    
-    /* SweetAlert styles are no longer needed */
-
 </style>
 
 <div class="max-w-6xl mx-auto">
@@ -143,6 +140,13 @@
                                     <label for="profile_confirm_password" class="block text-sm font-medium text-neutral-700 mb-1">Confirm New Password</label>
                                     <input type="password" id="profile_confirm_password" name="confirm_password" required class="form-input">
                                 </div>
+
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="show-passwords" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer">
+                                    <label for="show-passwords" class="ml-2 block text-sm text-gray-900 cursor-pointer">
+                                        Show Passwords
+                                    </label>
+                                </div>
                             </div>
                             
                             <div class="text-right mt-6">
@@ -180,25 +184,28 @@ $(document).ready(function() {
         $('.tab-link[data-tab="password"]').click();
     <?php endif; ?>
 
-    // 3. === NEW SCRIPT: Trigger Custom Modal ===
+    // 3. Trigger Custom Modal for Sign Out
     $('#sign-out-link').on('click', function(e) {
-        // Prevent the link from navigating immediately
         e.preventDefault(); 
-        var signOutUrl = $(this).attr('href'); // Get the URL from the link
+        var signOutUrl = $(this).attr('href');
         
-        // Call the global function from footer.php
         showConfirmationModal({
             title: 'Sign Out',
             body: '<p class="text-sm text-neutral-600">Are you sure you want to sign out of your account?</p>',
             confirmText: 'Sign Out',
-            confirmClass: 'btn-danger', // <-- This class is now changed
+            confirmClass: 'btn-danger',
             onConfirm: function() {
-                // This code runs when the user clicks "Sign Out"
                 window.location.href = signOutUrl;
             }
         });
     });
+
+    // 4. Toggle Password Visibility
+    $('#show-passwords').on('change', function() {
+        const type = $(this).is(':checked') ? 'text' : 'password';
+        $('#profile_current_password, #profile_new_password, #profile_confirm_password').attr('type', type);
+    });
 });
 </script>
 
-<?php include 'app/views/layouts/footer.php'; ?>
+<?php include 'app/views/layouts/footer.php'; ?>    
