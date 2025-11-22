@@ -309,5 +309,6 @@ class Assignment_Model extends Model {
         
         return $this->db->raw($sql, [$student_id])->fetch(PDO::FETCH_ASSOC);
     }
+    
 }
 ?>

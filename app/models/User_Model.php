@@ -73,5 +73,21 @@ class User_Model extends Model {
                 ORDER BY created_at ASC";
         return $this->db->raw($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function count_users_by_date($range) {
+        $sql = "SELECT COUNT(*) as total FROM " . $this->table;
+        
+        if ($range == 'weekly') {
+            $sql .= " WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)";
+        } elseif ($range == 'monthly') {
+            $sql .= " WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
+        } elseif ($range == 'yearly') {
+            $sql .= " WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+        }
+        // 'all' needs no WHERE clause
+        
+        $result = $this->db->raw($sql)->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
 }
 ?>

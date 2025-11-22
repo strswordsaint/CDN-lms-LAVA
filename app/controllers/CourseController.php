@@ -9,7 +9,7 @@ class CourseController extends Controller {
     public function __construct()
     {
         parent::__construct();
-         $this->call->database(); // Ensure DB is available
+        $this->call->database(); // Ensure DB is available
 
         // Load the models
         $this->call->model('Course_Model');
@@ -265,6 +265,7 @@ class CourseController extends Controller {
         redirect('/courses'); // Redirect back to the course list
     }
 
+    // === UPDATED FUNCTION ===
     public function manage_enrollments($course_id) {
         $teacher_id = $this->session->userdata('user_id');
         $course = $this->Course_Model->find_course($course_id, $teacher_id); // Check ownership
@@ -275,16 +276,55 @@ class CourseController extends Controller {
             return;
         }
 
-        // $this->call->model('Enrollment_Model'); // Already loaded
+        // Load the Submission Model for grades
+        $this->call->model('Assignment_Submission_Model');
 
         $data['course'] = $course;
         $data['page_title'] = 'Manage Enrollments for: ' . htmlspecialchars($course['title']);
+        
+        // Existing tabs
         $data['pending_enrollments'] = $this->Enrollment_Model->get_enrollments_for_course($course_id, 'pending');
         $data['approved_enrollments'] = $this->Enrollment_Model->get_enrollments_for_course($course_id, 'approved');
+        
+        // NEW: Get Gradebook Data
+        $data['gradebook'] = $this->Assignment_Submission_Model->get_course_gradebook($course_id);
+        
         $data['success_message'] = $this->session->flashdata('success');
         $data['error_message'] = $this->session->flashdata('error');
 
         $this->call->view('/courses/manage_enrollments', $data);
+    }
+
+    /**
+     * NEW: API Endpoint for the Grade Modal
+     * Fetches specific student details via AJAX
+     */
+    /**
+     * API Endpoint for the Teacher Gradebook Modal
+     * Fetches specific student details via AJAX
+     */
+    public function get_student_grades_ajax($course_id, $student_id) {
+        // Load the necessary model
+        $this->call->model('Assignment_Submission_Model');
+        
+        $teacher_id = $this->session->userdata('user_id');
+        
+        // Security: Check if the teacher owns this course
+        $course = $this->Course_Model->find_course($course_id, $teacher_id);
+        
+        if (!$course) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Access denied']);
+            exit;
+        }
+
+        // Fetch the data
+        $details = $this->Assignment_Submission_Model->get_student_detailed_grades($course_id, $student_id);
+        
+        // Return JSON response
+        header('Content-Type: application/json');
+        echo json_encode($details);
+        exit;
     }
 
     /**
