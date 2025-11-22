@@ -127,7 +127,13 @@ $router->get('/assignments/all', 'AssignmentController::view_all')->name('assign
 $router->get('/submissions/{sub_id}/grade', 'AssignmentController::show_grade_form')->where_number('sub_id');
 $router->post('/submissions/{sub_id}/grade', 'AssignmentController::process_grade')->where_number('sub_id');
 $router->get('/submissions/ungraded', 'AssignmentController::view_ungraded')->name('submissions.ungraded');
-
+// New AJAX Route for Student Gradebook Modal
+$router->get('/courses/api/grades/{course_id}/{student_id}', 'CourseController::get_student_grades_ajax')
+       ->where_number('course_id')
+       ->where_number('student_id');
+// Student Progress API
+$router->get('/student/api/progress/(:num)', 'StudentController::get_progress_ajax/$1');
+$router->get('/student/api/progress/{id}', 'StudentController::get_progress_ajax')->where_number('id');
 
 /*
 | -------------------------------------------------------------------
@@ -204,4 +210,8 @@ $router->get('/admin/announcements', 'AdminController::manage_site_announcements
 $router->post('/admin/announcements/store', 'AdminController::store_site_announcement')->name('admin.announcements.store');
 $router->post('/admin/announcements/delete/{id}', 'AdminController::delete_site_announcement')->where_number('id')->name('admin.announcements.delete');
 $router->get('/admin/reports', 'AdminController::general_reports')->name('admin.reports');
+//print users report
+$router->get('/admin/reports/print_users', 'AdminController::print_users_report');
+$router->get('/admin/reports/print_users/{role}', 'AdminController::print_users_report');
+
 ?>

@@ -23,6 +23,7 @@
         border-bottom: 1px solid #e2e8f0;
         padding: 2.5rem 0;
         box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        margin-bottom: 2rem;
     }
     
     /* Decorative Background Elements */
@@ -218,6 +219,12 @@
         transition: all 0.2s;
     }
 
+    /* === MODAL STYLES === */
+    #progressModal {
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+    }
+
     .tab-panel { display: none; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
     .tab-panel.active { display: block; }
     
@@ -249,13 +256,17 @@
                 </div>
             </div>
 
-            <div class="flex flex-col items-end gap-2">
+            <div class="flex flex-col items-end gap-3">
                 <div class="bg-white/80 backdrop-blur border border-neutral-200 shadow-sm rounded-xl px-5 py-3 text-right">
                     <div class="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Enrollment Code</div>
                     <div class="text-xl font-mono font-bold text-primary-700 select-all">
                         <?php echo htmlspecialchars($course['enrollment_code'] ?? $course['course_id']); ?>
                     </div>
                 </div>
+                
+                <button type="button" id="btnViewProgress" class="btn bg-white border border-neutral-200 text-neutral-600 hover:text-primary-600 hover:border-primary-300 shadow-sm rounded-lg px-4 py-2 text-sm font-bold transition-all flex items-center">
+                    <i class="fas fa-chart-pie mr-2 text-primary-500"></i> My Grades
+                </button>
             </div>
 
         </div>
@@ -481,6 +492,56 @@
     </div>
 </div>
 
+<div id="progressModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col transform transition-all scale-95 opacity-0" id="progressModalContent" style="max-height: 90vh;">
+        
+        <div class="p-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50">
+            <div>
+                <h3 class="text-xl font-extrabold text-neutral-900">My Progress</h3>
+                <p class="text-xs text-neutral-500">Performance Summary</p>
+            </div>
+            <button type="button" id="closeProgressModal" class="text-neutral-400 hover:text-neutral-600 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto">
+            
+            <div id="progressLoader" class="flex justify-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-primary-200"></i>
+            </div>
+
+            <div id="progressData" class="hidden">
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
+                        <div class="text-2xl font-black text-blue-600" id="statPercent">0%</div>
+                        <div class="text-[10px] font-bold text-blue-400 uppercase tracking-wide mt-1">Current Grade</div>
+                    </div>
+                    <div class="bg-green-50 rounded-xl p-4 text-center border border-green-100">
+                        <div class="text-2xl font-black text-green-700" id="statPoints">0/0</div>
+                        <div class="text-[10px] font-bold text-green-500 uppercase tracking-wide mt-1">Total Points</div>
+                    </div>
+                    <div class="bg-amber-50 rounded-xl p-4 text-center border border-amber-100">
+                        <div class="text-2xl font-black text-amber-600" id="statPending">0</div>
+                        <div class="text-[10px] font-bold text-amber-500 uppercase tracking-wide mt-1">Pending</div>
+                    </div>
+                    <div class="bg-red-50 rounded-xl p-4 text-center border border-red-100">
+                        <div class="text-2xl font-black text-red-600" id="statMissing">0</div>
+                        <div class="text-[10px] font-bold text-red-400 uppercase tracking-wide mt-1">Missing</div>
+                    </div>
+                </div>
+
+                <h4 class="text-sm font-bold text-neutral-800 mb-4 border-b border-neutral-100 pb-2">Detailed Breakdown</h4>
+                
+                <div id="gradesList" class="space-y-2">
+                    </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php include 'app/views/layouts/footer.php'; ?>
 
 <script>
@@ -497,7 +558,7 @@ $(document).ready(function() {
     }
 
     if (!savedTab) {
-        savedTab = 'announcements'; // Default to announcements
+        savedTab = 'announcements';
     }
 
     function activateTab(tab) {
@@ -516,6 +577,86 @@ $(document).ready(function() {
         e.preventDefault();
         activateTab($(this).data('tab'));
         $('html, body').animate({ scrollTop: 0 }, 300);
+    });
+
+    // === PROGRESS MODAL LOGIC ===
+    const modal = $('#progressModal');
+    const content = $('#progressModalContent');
+    const loader = $('#progressLoader');
+    const dataArea = $('#progressData');
+
+    $('#btnViewProgress').on('click', function() {
+        modal.removeClass('hidden');
+        setTimeout(() => {
+            content.removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+        }, 10);
+
+        // Reset state
+        loader.removeClass('hidden');
+        dataArea.addClass('hidden');
+
+        // Fetch Data via AJAX
+        $.ajax({
+            url: '<?php echo site_url("/student/api/progress/" . $course['course_id']); ?>',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                // Update Stats
+                $('#statPercent').text(response.stats.percentage + '%');
+                $('#statPoints').text(response.stats.earned + ' / ' + response.stats.total);
+                $('#statPending').text(response.stats.pending);
+                $('#statMissing').text(response.stats.missing);
+
+                // Build List
+                let html = '';
+                if(response.grades.length === 0) {
+                    html = '<p class="text-center text-neutral-400 py-4">No assignments found.</p>';
+                } else {
+                    response.grades.forEach(item => {
+                        html += `
+                            <a href="${item.link}" class="flex items-center justify-between p-3 rounded-lg border border-neutral-100 hover:border-primary-200 hover:bg-primary-50 transition-colors group">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-white border border-neutral-200 flex items-center justify-center text-neutral-400 text-xs shadow-sm">
+                                        <i class="fas fa-${item.type === 'Quiz' ? 'puzzle-piece' : 'tasks'}"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-sm text-neutral-800 group-hover:text-primary-700">${item.title}</div>
+                                        <div class="text-[10px] text-neutral-400">Due: ${item.due_date}</div>
+                                    </div>
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${item.badge_class}">
+                                    ${item.status_label}
+                                </span>
+                            </a>
+                        `;
+                    });
+                }
+                $('#gradesList').html(html);
+
+                // Show Content
+                loader.addClass('hidden');
+                dataArea.removeClass('hidden');
+            },
+            error: function() {
+                loader.addClass('hidden');
+                $('#gradesList').html('<p class="text-center text-red-500 py-4">Failed to load progress data.</p>').removeClass('hidden');
+            }
+        });
+    });
+
+    // Close Modal Logic
+    $('#closeProgressModal').on('click', function() {
+        content.removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+        setTimeout(() => {
+            modal.addClass('hidden');
+        }, 200);
+    });
+    
+    // Close on click outside
+    $(window).on('click', function(e) {
+        if (e.target == modal[0]) {
+            $('#closeProgressModal').click();
+        }
     });
 });
 </script>

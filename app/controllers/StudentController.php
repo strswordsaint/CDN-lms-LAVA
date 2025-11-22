@@ -362,21 +362,32 @@ class StudentController extends Controller {
             $is_graded = $assignment['grade'] !== null;
             $is_overdue = strtotime($assignment['due_date']) < time();
 
-            if ($is_graded) {
+            // Logic: Submitted OR Graded = Completed
+            if ($is_submitted || $is_graded) {
                 $completed[] = $assignment;
-            } else if ($is_submitted && $is_overdue) {
-                $completed[] = $assignment; // Submitted and past due counts as "completed"
-            } else if (!$is_submitted && $is_overdue) {
+            } else if ($is_overdue) {
                 $past_due[] = $assignment;
             } else {
-                // This covers:
-                // - Not submitted, not due
-                // - Submitted, not due
                 $upcoming[] = $assignment;
             }
         }
 
-        // 3. Pass to the view
+        // 3. SORT COMPLETED: Ungraded first, then Graded. 
+        // Secondary sort by due_date descending.
+        usort($completed, function($a, $b) {
+            $a_graded = $a['grade'] !== null;
+            $b_graded = $b['grade'] !== null;
+
+            // If one is graded and the other isn't, prioritize ungraded (false < true)
+            if ($a_graded !== $b_graded) {
+                return $a_graded ? 1 : -1; // True (graded) goes to bottom
+            }
+            
+            // If both are same status (both graded or both ungraded), sort by date desc
+            return strtotime($b['due_date']) - strtotime($a['due_date']);
+        });
+
+        // 4. Pass to the view
         $data['assignments_upcoming'] = $upcoming;
         $data['assignments_past_due'] = $past_due;
         $data['assignments_completed'] = $completed;
@@ -487,16 +498,29 @@ class StudentController extends Controller {
             $is_graded = $activity['grade'] !== null;
             $is_overdue = strtotime($activity['due_date']) < time();
 
-            if ($is_graded) {
+            // Logic: Submitted OR Graded = Completed
+            if ($is_submitted || $is_graded) {
                 $completed[] = $activity;
-            } else if ($is_submitted && $is_overdue) {
-                $completed[] = $activity;
-            } else if (!$is_submitted && $is_overdue) {
+            } else if ($is_overdue) {
                 $past_due[] = $activity;
             } else {
                 $upcoming[] = $activity;
             }
         }
+
+        // SORT COMPLETED: Ungraded first, then Graded.
+        usort($completed, function($a, $b) {
+            $a_graded = $a['grade'] !== null;
+            $b_graded = $b['grade'] !== null;
+
+            // If one is graded and the other isn't, prioritize ungraded (false < true)
+            if ($a_graded !== $b_graded) {
+                return $a_graded ? 1 : -1; 
+            }
+            
+            // Secondary sort by date
+            return strtotime($b['due_date']) - strtotime($a['due_date']);
+        });
 
         $data['activities_upcoming'] = $upcoming;
         $data['activities_past_due'] = $past_due;
@@ -534,6 +558,95 @@ class StudentController extends Controller {
         
         $this->call->view('/student/quiz_results', $data);
     }
+    /**
+     * API Endpoint for Student Progress Modal
+     */
+    public function get_progress_ajax($course_id) {
+        $student_id = $this->session->userdata('user_id');
+        
+        // 1. Security: Ensure student is enrolled
+        $is_enrolled = $this->Enrollment_Model->has_pending_or_approved_enrollment($student_id, $course_id);
+        
+        if (!$is_enrolled) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Access Denied']);
+            exit;
+        }
+
+        // 2. Get Grades
+        $this->call->model('Assignment_Submission_Model');
+        $grades = $this->Assignment_Submission_Model->get_student_detailed_grades($course_id, $student_id);
+
+        // 3. Calculate Stats
+        $total_possible = 0;
+        $total_earned = 0;
+        $missing_count = 0;
+        $pending_count = 0;
+
+        $processed_grades = [];
+
+        foreach($grades as $item) {
+            if ($item['type'] == 'announcement') continue;
+
+            $is_graded = ($item['grade'] !== null);
+            $is_submitted = ($item['submission_id'] !== null);
+            $is_overdue = (strtotime($item['due_date']) < time());
+            
+            if ($item['points'] > 0) {
+                $total_possible += $item['points'];
+                if ($is_graded) {
+                    $total_earned += $item['grade'];
+                } elseif ($is_submitted) {
+                    $pending_count++;
+                } elseif ($is_overdue) {
+                    $missing_count++;
+                }
+            }
+
+            // Badge Logic
+            $status_label = 'Not Submitted';
+            $badge_class = 'bg-neutral-100 text-neutral-600 border-neutral-200';
+
+            if ($is_graded) {
+                $status_label = $item['grade'] . ' / ' . $item['points'];
+                $badge_class = 'bg-green-50 text-green-700 border-green-200';
+            } elseif ($is_submitted) {
+                $status_label = 'Needs Grading';
+                $badge_class = 'bg-amber-50 text-amber-700 border-amber-200';
+            } elseif ($is_overdue) {
+                $status_label = 'Missing';
+                $badge_class = 'bg-red-50 text-red-700 border-red-200';
+            }
+
+            $processed_grades[] = [
+                'id' => $item['assignment_id'],
+                'title' => $item['title'],
+                'type' => ucfirst($item['type']),
+                'due_date' => date('M d', strtotime($item['due_date'])),
+                'status_label' => $status_label,
+                'badge_class' => $badge_class,
+                'link' => site_url(($item['type'] == 'quiz' ? '/quiz/' : '/assignment/') . $item['assignment_id'])
+            ];
+        }
+
+        $percentage = ($total_possible > 0) ? round(($total_earned / $total_possible) * 100, 1) : 0;
+
+        $response = [
+            'stats' => [
+                'percentage' => $percentage,
+                'earned' => $total_earned,
+                'total' => $total_possible,
+                'pending' => $pending_count,
+                'missing' => $missing_count
+            ],
+            'grades' => $processed_grades
+        ];
+
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        exit;
+    }
+    
 
 }
 ?>

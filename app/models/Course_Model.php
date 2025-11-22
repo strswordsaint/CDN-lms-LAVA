@@ -67,4 +67,19 @@ class Course_Model extends Model {
                 LIMIT ?";
         return $this->db->raw($sql, [$limit])->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function count_courses_by_date($range) {
+        $sql = "SELECT COUNT(*) as total FROM " . $this->table;
+        
+        if ($range == 'weekly') {
+            $sql .= " WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)";
+        } elseif ($range == 'monthly') {
+            $sql .= " WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
+        } elseif ($range == 'yearly') {
+            $sql .= " WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+        }
+        
+        $result = $this->db->raw($sql)->fetch(PDO::FETCH_ASSOC);
+        return $result['total'] ?? 0;
+    }
 }

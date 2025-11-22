@@ -580,10 +580,19 @@ class AssignmentController extends Controller {
         
         $all_assignments = $this->Assignment_Model->get_all_for_teacher($teacher_id);
         
+        // 1. Get a list of all assignments that have at least one ungraded submission
+        // We use the Assignment_Submission_Model to fetch this data
+        $ungraded_submissions = $this->Assignment_Submission_Model->get_all_ungraded_by_teacher($teacher_id);
+        // Extract just the unique assignment IDs
+        $ungraded_assignment_ids = array_unique(array_column($ungraded_submissions, 'assignment_id'));
+
         $upcoming = [];
         $past_due = [];
         
         foreach ($all_assignments as $assignment) {
+            // Check if this assignment has any pending grading
+            $assignment['has_ungraded'] = in_array($assignment['assignment_id'], $ungraded_assignment_ids);
+
             if (strtotime($assignment['due_date']) > time()) {
                 $upcoming[] = $assignment;
             } else {
@@ -591,11 +600,21 @@ class AssignmentController extends Controller {
             }
         }
 
+        // 2. Sort the "Past Due" list: 
+        // Prioritize assignments that have ungraded submissions (has_ungraded = true)
+        usort($past_due, function($a, $b) {
+            // Primary Sort: Has ungraded (True comes before False)
+            if ($a['has_ungraded'] !== $b['has_ungraded']) {
+                return $a['has_ungraded'] ? -1 : 1; 
+            }
+            // Secondary Sort: Due date (Newest due date first)
+            return strtotime($b['due_date']) - strtotime($a['due_date']);
+        });
+
         $data['assignments_upcoming'] = $upcoming;
         $data['assignments_past_due'] = $past_due;
         
-        // As requested, the "Completed" tab will show the same list as "Past Due."
-        // This "Past Due" list is the primary area for grading.
+        // The "Completed" tab shows the sorted Past Due list (Needs Grading > Fully Graded)
         $data['assignments_completed'] = $past_due; 
         
         $data['page_title'] = 'All Assignments';

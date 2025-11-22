@@ -1,68 +1,80 @@
 <?php defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed'); ?>
 <?php include 'app/views/layouts/header.php'; ?>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-    /* === Modern Variables === */
-    :root { --bg-body: #eef2f6; --primary-soft: #eff6ff; --primary-border: #bfdbfe; --primary-text: #1d4ed8; }
-    body { background-color: var(--bg-body); font-family: 'Inter', sans-serif; }
-
-    /* === DESIGNED BANNER === */
-    .page-banner {
-        background: white; position: relative; overflow: hidden; border-bottom: 1px solid #e2e8f0; padding: 2rem 0;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.02); margin-bottom: 2rem;
-    }
-    .banner-decoration { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6; z-index: 0; }
-    .decoration-1 { top: -60%; left: -10%; width: 500px; height: 500px; background: #dcfce7; }
-    .decoration-2 { bottom: -60%; right: -5%; width: 400px; height: 400px; background: #e0e7ff; }
-    .banner-content { position: relative; z-index: 10; }
-
-    /* === REPORT CARD STYLE === */
-    .report-card {
-        @apply bg-white rounded-xl border border-neutral-200 shadow-sm p-6 flex flex-col justify-between h-full transition-all duration-200;
-    }
-    .report-card:hover { @apply shadow-md border-primary-300 transform -translate-y-1; }
-    
-    .stat-value { @apply text-3xl font-extrabold text-neutral-900 mt-2 mb-1; }
-    .stat-label { @apply text-xs font-bold text-neutral-400 uppercase tracking-wide; }
-    
     /* Print Styles */
     @media print {
         body > nav, body > footer, #app-sidebar, #print-controls, .back-link { display: none !important; }
         body, html { background: #fff !important; color: #000 !important; height: auto !important; overflow: visible !important; }
-        .main-layout { display: block !important; }
         .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
         .page-banner { box-shadow: none !important; border-bottom: 2px solid #000 !important; padding: 1rem 0 !important; margin-bottom: 1rem !important; }
-        .report-card, .bg-white { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
-        table { width: 100% !important; border-collapse: collapse !important; }
-        th, td { border: 1px solid #999 !important; padding: 8px !important; }
-        .text-primary-600, .text-green-600, .text-red-600 { color: #000 !important; }
-        .bg-green-100, .bg-red-100 { background: transparent !important; border: 1px solid #000 !important; }
+        .bg-white { border: 1px solid #ccc !important; }
+        .text-indigo-700 { color: black !important; }
+        /* Hide elements that might clutter print */
+        .form-select, form { display: none !important; } 
     }
 </style>
 
-<div class="page-banner">
-    <div class="banner-decoration decoration-1"></div>
-    <div class="banner-decoration decoration-2"></div>
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 banner-content">
+<div class="bg-white border-b border-neutral-200 py-8 mb-8 shadow-sm" id="page-banner">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-neutral-900 tracking-tight mb-1">General Reports</h1>
-                <p class="text-neutral-500 text-sm">System-wide analytics and master records.</p>
+                <h1 class="text-3xl font-extrabold text-neutral-900 tracking-tight mb-1">System Analytics</h1>
+                <p class="text-neutral-500 text-sm">Performance metrics and growth insights.</p>
             </div>
             
-            <div id="print-controls" class="flex items-center gap-3">
-                <form method="GET" class="flex items-center gap-2">
-                    <select name="range" class="form-select text-sm border-neutral-300 rounded-lg focus:ring-primary-500" onchange="this.form.submit()">
-                        <option value="all" <?php echo (!isset($_GET['range']) || $_GET['range'] == 'all') ? 'selected' : ''; ?>>All Time</option>
-                        <option value="weekly" <?php echo (isset($_GET['range']) && $_GET['range'] == 'weekly') ? 'selected' : ''; ?>>This Week</option>
-                        <option value="monthly" <?php echo (isset($_GET['range']) && $_GET['range'] == 'monthly') ? 'selected' : ''; ?>>This Month</option>
-                        <option value="yearly" <?php echo (isset($_GET['range']) && $_GET['range'] == 'yearly') ? 'selected' : ''; ?>>This Year</option>
-                    </select>
+            <div class="flex items-center gap-3">
+                <form method="GET" class="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg border border-neutral-200">
+                    <?php $range = $selected_range ?? 'all'; ?>
+                    
+                    <button type="submit" name="range" value="weekly" class="px-4 py-1.5 text-sm font-medium rounded-md transition-all <?php echo $range == 'weekly' ? 'bg-white text-primary-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-800'; ?>">
+                        Weekly
+                    </button>
+                    <button type="submit" name="range" value="monthly" class="px-4 py-1.5 text-sm font-medium rounded-md transition-all <?php echo $range == 'monthly' ? 'bg-white text-primary-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-800'; ?>">
+                        Monthly
+                    </button>
+                    <button type="submit" name="range" value="yearly" class="px-4 py-1.5 text-sm font-medium rounded-md transition-all <?php echo $range == 'yearly' ? 'bg-white text-primary-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-800'; ?>">
+                        Yearly
+                    </button>
+                    <button type="submit" name="range" value="all" class="px-4 py-1.5 text-sm font-medium rounded-md transition-all <?php echo $range == 'all' ? 'bg-white text-primary-700 shadow-sm' : 'text-neutral-500 hover:text-neutral-800'; ?>">
+                        All Time
+                    </button>
                 </form>
+                
+                <div id="print-controls" class="relative inline-block text-left">
+                    <div>
+                        <button type="button" class="btn btn-secondary flex items-center gap-2 bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-50 px-4 py-2 rounded-lg shadow-sm font-medium transition-colors" id="print-menu-button" aria-expanded="true" aria-haspopup="true" onclick="document.getElementById('print-menu').classList.toggle('hidden');">
+                            <i class="fas fa-print"></i> Print Reports
+                            <i class="fas fa-chevron-down text-xs ml-1"></i>
+                        </button>
+                    </div>
 
-                <button onclick="window.print();" class="btn btn-secondary flex items-center gap-2 shadow-sm">
-                    <i class="fas fa-print"></i> Print
-                </button>
+                    <div class="hidden absolute right-0 z-10 mt-2 w-64 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="print-menu-button" tabindex="-1" id="print-menu">
+                        <div class="py-1" role="none">
+                            <a href="#" onclick="window.print(); return false;" class="text-gray-700 block px-4 py-3 text-sm hover:bg-gray-50 border-b border-gray-100" role="menuitem">
+                                <div class="font-bold"><i class="fas fa-chart-pie mr-2 text-blue-500"></i> Print Analytics</div>
+                                <span class="text-xs text-gray-500 ml-6">Current screen & charts</span>
+                            </a>
+                            
+                            <a href="<?php echo site_url('/admin/reports/print_users/all'); ?>" target="_blank" class="text-gray-700 block px-4 py-3 text-sm hover:bg-gray-50" role="menuitem">
+                                <div class="font-bold"><i class="fas fa-users mr-2 text-indigo-500"></i> Master User List</div>
+                                <span class="text-xs text-gray-500 ml-6">Full registry of all users</span>
+                            </a>
+                            
+                            <a href="<?php echo site_url('/admin/reports/print_users/student'); ?>" target="_blank" class="text-gray-700 block px-4 py-3 text-sm hover:bg-gray-50" role="menuitem">
+                                <div class="font-bold"><i class="fas fa-user-graduate mr-2 text-green-500"></i> Student Report</div>
+                                <span class="text-xs text-gray-500 ml-6">Grades & performance data</span>
+                            </a>
+                            
+                            <a href="<?php echo site_url('/admin/reports/print_users/teacher'); ?>" target="_blank" class="text-gray-700 block px-4 py-3 text-sm hover:bg-gray-50" role="menuitem">
+                                <div class="font-bold"><i class="fas fa-chalkboard-teacher mr-2 text-amber-500"></i> Teacher Registry</div>
+                                <span class="text-xs text-gray-500 ml-6">List of all instructors</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -75,64 +87,147 @@
     </a>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div class="report-card border-l-4 border-l-indigo-500">
-            <div class="flex justify-between items-start">
-                <div>
-                    <div class="stat-label">Total Courses</div>
-                    <div class="stat-value"><?php echo $total_courses ?? 0; ?></div>
+        <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-between">
+            <div>
+                <div class="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                    <?php echo ucfirst($range); ?> Signups
                 </div>
-                <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
-                    <i class="fas fa-book"></i>
-                </div>
+                <div class="text-3xl font-extrabold text-neutral-900"><?php echo $stats['users']; ?></div>
             </div>
-            <div class="text-xs text-neutral-500 mt-2">Active classes in system</div>
+            <div class="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xl">
+                <i class="fas fa-user-plus"></i>
+            </div>
         </div>
 
-        <div class="report-card border-l-4 border-l-green-500">
-            <div class="flex justify-between items-start">
-                <div>
-                    <div class="stat-label">Total Enrollments</div>
-                    <div class="stat-value"><?php echo $total_enrollments ?? 0; ?></div>
+        <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-between">
+            <div>
+                <div class="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                    <?php echo ucfirst($range); ?> Courses
                 </div>
-                <div class="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-lg">
-                    <i class="fas fa-user-check"></i>
-                </div>
+                <div class="text-3xl font-extrabold text-neutral-900"><?php echo $stats['courses']; ?></div>
             </div>
-            <div class="text-xs text-neutral-500 mt-2">Approved student seats</div>
+            <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                <i class="fas fa-book"></i>
+            </div>
         </div>
 
-        <div class="report-card border-l-4 border-l-blue-500">
-            <div class="flex justify-between items-start">
-                <div>
-                    <div class="stat-label">Assignments</div>
-                    <div class="stat-value"><?php echo $total_assignments ?? 0; ?></div>
+        <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-between">
+            <div>
+                <div class="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                    <?php echo ucfirst($range); ?> Submissions
                 </div>
-                <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
-                    <i class="fas fa-tasks"></i>
-                </div>
+                <div class="text-3xl font-extrabold text-neutral-900"><?php echo $stats['submissions']; ?></div>
             </div>
-            <div class="text-xs text-neutral-500 mt-2">Created by teachers</div>
+            <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                <i class="fas fa-file-upload"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm flex items-center justify-between">
+            <div>
+                <div class="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                    Total Assignments
+                </div>
+                <div class="text-3xl font-extrabold text-neutral-900"><?php echo $stats['assignments']; ?></div>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                <i class="fas fa-tasks"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
+            <h3 class="text-lg font-bold text-neutral-800 mb-4">Submission Trends (Last 6 Months)</h3>
+            <div class="h-64">
+                <canvas id="submissionChart"></canvas>
+            </div>
         </div>
 
-        <div class="report-card border-l-4 border-l-amber-500">
-            <div class="flex justify-between items-start">
-                <div>
-                    <div class="stat-label">Submissions</div>
-                    <div class="stat-value"><?php echo $total_submissions ?? 0; ?></div>
-                </div>
-                <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
-                    <i class="fas fa-file-upload"></i>
-                </div>
+        <div class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
+            <h3 class="text-lg font-bold text-neutral-800 mb-4">User Growth (Last 6 Months)</h3>
+            <div class="h-64">
+                <canvas id="growthChart"></canvas>
             </div>
-            <div class="text-xs text-neutral-500 mt-2">Files uploaded by students</div>
         </div>
     </div>
 
     <div class="space-y-8">
         
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <div class="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden h-full">
+                <div class="p-6 border-b border-neutral-100 flex items-center gap-3 bg-yellow-50">
+                    <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-neutral-800">Top Performing Students</h2>
+                        <p class="text-xs text-neutral-500">Highest average grades across all courses</p>
+                    </div>
+                </div>
+                <div class="p-0">
+                    <table class="min-w-full text-left text-sm">
+                        <tbody class="divide-y divide-neutral-100">
+                            <?php if(empty($top_students)): ?>
+                                <tr><td class="p-6 text-center text-neutral-400 italic">No grading data available yet.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($top_students as $index => $student): ?>
+                                    <tr class="hover:bg-neutral-50">
+                                        <td class="px-6 py-4 font-medium text-neutral-900">
+                                            <span class="mr-3 font-bold text-neutral-400">#<?php echo $index + 1; ?></span>
+                                            <?php echo htmlspecialchars($student['first_name'] . ' ' . $student['last_name']); ?>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                                <?php echo number_format($student['percentage'], 1); ?>%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden h-full">
+                <div class="p-6 border-b border-neutral-100 flex items-center gap-3 bg-indigo-50">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-neutral-800">Course Performance</h2>
+                        <p class="text-xs text-neutral-500">Highest average class scores</p>
+                    </div>
+                </div>
+                <div class="p-0">
+                    <table class="min-w-full text-left text-sm">
+                        <tbody class="divide-y divide-neutral-100">
+                            <?php if(empty($top_courses)): ?>
+                                <tr><td class="p-6 text-center text-neutral-400 italic">No grading data available yet.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($top_courses as $course): ?>
+                                    <tr class="hover:bg-neutral-50">
+                                        <td class="px-6 py-4">
+                                            <div class="font-medium text-neutral-900"><?php echo htmlspecialchars($course['title']); ?></div>
+                                            <div class="text-xs text-neutral-500">Instr: <?php echo htmlspecialchars($course['last_name']); ?></div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <div class="text-lg font-bold text-indigo-700"><?php echo number_format($course['average_percentage'], 1); ?>%</div>
+                                            <div class="text-xs text-neutral-400">Avg. Score</div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         <div class="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
             <div class="p-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50">
-                <h2 class="text-lg font-bold text-neutral-800">Master Course List</h2>
+                <h2 class="text-lg font-bold text-neutral-800">Master Course Registry</h2>
                 <span class="text-xs font-medium bg-white border border-neutral-200 px-2 py-1 rounded text-neutral-500">
                     <?php echo count($master_course_list ?? []); ?> Records
                 </span>
@@ -231,3 +326,52 @@
 </div>
 
 <?php include 'app/views/layouts/footer.php'; ?>
+
+<script>
+    // Dropdown Menu Logic
+    window.addEventListener('click', function(e) {
+        if (!document.getElementById('print-controls').contains(e.target)) {
+            document.getElementById('print-menu').classList.add('hidden');
+        }
+    });
+
+    // Prepare Data from PHP
+    const subData = <?php echo json_encode($submission_trends ?? []); ?>;
+    const regData = <?php echo json_encode($registration_trends ?? []); ?>;
+
+    // 1. Submission Trend Chart
+    if (document.getElementById('submissionChart')) {
+        new Chart(document.getElementById('submissionChart'), {
+            type: 'line',
+            data: {
+                labels: subData.map(d => d.month),
+                datasets: [{
+                    label: 'Submissions',
+                    data: subData.map(d => d.count),
+                    borderColor: '#f59e0b', // Amber
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // 2. Growth Trend Chart
+    if (document.getElementById('growthChart')) {
+        new Chart(document.getElementById('growthChart'), {
+            type: 'bar',
+            data: {
+                labels: regData.map(d => d.month_label),
+                datasets: [{
+                    label: 'New Users',
+                    data: regData.map(d => d.count),
+                    backgroundColor: '#3b82f6', // Blue
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+</script>

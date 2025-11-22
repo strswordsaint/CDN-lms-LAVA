@@ -93,7 +93,12 @@ class DashboardController extends Controller {
                     'pending_assignments' => $pending_count,
                 ];
                 $data['upcoming_assignments'] = $upcoming;
+                
+                // Existing Weekly Stats
                 $data['weekly_stats'] = $this->Assignment_Model->get_student_stats_for_week($student_id);
+                
+                // NEW: Course Grades for Bar Chart
+                $data['grades_overview'] = $this->Assignment_Submission_Model->get_student_overall_grades($student_id);
 
                 $this->call->view('/dashboards/student', $data);
             break;

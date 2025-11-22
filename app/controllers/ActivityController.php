@@ -12,6 +12,7 @@ class ActivityController extends Controller {
         $this->call->database();
         $this->call->model('Course_Model');
         $this->call->model('Assignment_Model'); // We use this model
+        $this->call->model('Assignment_Submission_Model'); // Added this to check for submissions
         $this->call->library('session');
         $this->call->helper('url');
         
@@ -44,10 +45,16 @@ class ActivityController extends Controller {
         // Use the new model function we will create
         $all_activities = $this->Assignment_Model->get_all_activities_for_teacher($teacher_id); 
         
+        // 1. Get list of activities with ungraded submissions
+        $ungraded_submissions = $this->Assignment_Submission_Model->get_all_ungraded_by_teacher($teacher_id);
+        $ungraded_assignment_ids = array_unique(array_column($ungraded_submissions, 'assignment_id'));
+
         $upcoming = [];
         $past_due = [];
         
         foreach ($all_activities as $activity) {
+            $activity['has_ungraded'] = in_array($activity['assignment_id'], $ungraded_assignment_ids);
+
             if (strtotime($activity['due_date']) > time()) {
                 $upcoming[] = $activity;
             } else {
@@ -55,10 +62,21 @@ class ActivityController extends Controller {
             }
         }
 
+        // 2. Sort the "Past Due" list: 
+        // Prioritize activities that have ungraded submissions
+        usort($past_due, function($a, $b) {
+            // Primary Sort: Has ungraded (True comes before False)
+            if ($a['has_ungraded'] !== $b['has_ungraded']) {
+                return $a['has_ungraded'] ? -1 : 1; 
+            }
+            // Secondary Sort: Due date
+            return strtotime($b['due_date']) - strtotime($a['due_date']);
+        });
+
         $data['activities_upcoming'] = $upcoming;
         $data['activities_past_due'] = $past_due;
         
-        // This tab will just show the "Past Due" list
+        // The "Completed" tab will show the sorted list
         $data['activities_completed'] = $past_due; 
         
         $data['page_title'] = 'All Activities';

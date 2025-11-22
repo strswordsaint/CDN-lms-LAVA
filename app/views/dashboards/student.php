@@ -2,7 +2,7 @@
 <?php include 'app/views/layouts/header.php'; ?>
 
 <style>
-    /* === Modern Variables === */
+    /* === Modern Variables & Reset === */
     :root {
         --bg-body: #eef2f6; 
         --primary-soft: #eff6ff;
@@ -22,7 +22,7 @@
     .decoration-2 { bottom: -60%; right: -5%; width: 400px; height: 400px; background: #e0e7ff; }
     .banner-content { position: relative; z-index: 10; }
 
-    /* === ANALYTICS CARD (Hero Section) === */
+    /* === ANALYTICS CARD === */
     .analytics-card {
         background: white; border-radius: 1rem; border: 1px solid #cbd5e1;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 1.5rem; height: 100%;
@@ -104,7 +104,6 @@
         
         <div class="lg:col-span-2 analytics-card">
             <div class="flex flex-col sm:flex-row items-center gap-8 h-full">
-                
                 <div class="w-full sm:w-1/2 flex flex-col gap-6">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl border border-blue-100">
@@ -115,7 +114,6 @@
                             <h3 class="text-2xl font-extrabold text-neutral-900"><?php echo $stats['joined_courses']; ?></h3>
                         </div>
                     </div>
-                    
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl border border-amber-100">
                             <i class="fas fa-hourglass-half"></i>
@@ -126,7 +124,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="flex-1 w-full flex items-center justify-center border-t sm:border-t-0 sm:border-l border-neutral-100 pt-6 sm:pt-0 sm:pl-6">
                     <div class="chart-container">
                         <canvas id="studentWeekChart"></canvas>
@@ -138,14 +135,10 @@
         <?php 
             $next_assignment = !empty($upcoming_assignments) ? $upcoming_assignments[0] : null;
         ?>
-        
         <?php if ($next_assignment): ?>
             <a href="<?php echo site_url('/assignment/' . $next_assignment['assignment_id']); ?>" class="hunt-card group hover:border-amber-400 cursor-pointer lg:col-span-1 flex flex-col justify-center items-start relative">
-                <span class="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-amber-200">
-                    Next Due
-                </span>
+                <span class="absolute top-4 right-4 bg-amber-100 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-amber-200">Next Due</span>
                 <div class="accent-bar bg-amber-500"></div>
-                
                 <div class="w-full mb-3">
                     <div class="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-1">Priority Task</div>
                     <h3 class="text-xl font-extrabold text-neutral-900 line-clamp-1 group-hover:text-primary-700 transition-colors">
@@ -155,13 +148,11 @@
                         <?php echo htmlspecialchars($next_assignment['course_title']); ?>
                     </p>
                 </div>
-
                 <div class="w-full bg-amber-50 border border-amber-100 rounded-lg p-3 flex items-center justify-between">
                     <div class="text-xs font-bold text-amber-700">
                         <i class="far fa-clock mr-1"></i> 
                         <?php 
                             $due = strtotime($next_assignment['due_date']);
-                            // Simple "Due in X days" logic
                             $diff = ceil(($due - time()) / 86400);
                             echo ($diff == 0) ? 'Due Today!' : 'Due in ' . $diff . ' days';
                         ?>
@@ -179,7 +170,28 @@
                 <p class="text-xs text-neutral-500">No pending assignments.</p>
             </div>
         <?php endif; ?>
+    </div>
 
+    <div class="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden mb-8">
+        <div class="p-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50">
+            <div>
+                <h2 class="text-lg font-bold text-neutral-800">Academic Performance</h2>
+                <p class="text-xs text-neutral-500">Current grades across all your courses</p>
+            </div>
+            <div class="flex items-center gap-2">
+                 <span class="flex items-center text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">
+                    <div class="w-2 h-2 bg-green-500 rounded-full mr-1.5"></div> Good (>75%)
+                 </span>
+                 <span class="flex items-center text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-100">
+                    <div class="w-2 h-2 bg-amber-500 rounded-full mr-1.5"></div> Needs Focus
+                 </span>
+            </div>
+        </div>
+        <div class="p-6">
+            <div style="height: 280px;">
+                <canvas id="gradesBarChart"></canvas>
+            </div>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -241,14 +253,12 @@
                         </div>
                         <span class="font-semibold text-neutral-700 group-hover:text-blue-700">My Courses</span>
                     </a>
-                    
                     <a href="<?php echo site_url('/my-activities'); ?>" class="block p-3 rounded-xl hover:bg-neutral-50 transition-colors flex items-center gap-3 group border border-transparent hover:border-neutral-100">
                         <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <i class="fas fa-gamepad"></i>
                         </div>
                         <span class="font-semibold text-neutral-700 group-hover:text-amber-700">My Activities</span>
                     </a>
-
                     <a href="<?php echo site_url('/my-calendar'); ?>" class="block p-3 rounded-xl hover:bg-neutral-50 transition-colors flex items-center gap-3 group border border-transparent hover:border-neutral-100">
                         <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <i class="fas fa-calendar-alt"></i>
@@ -266,14 +276,14 @@
 
 <script>
 $(document).ready(function() {
-    // --- CHART DATA ---
+    // --- WEEKLY OVERVIEW CHART (DOUGHNUT) ---
     const weeklyStats = <?php echo json_encode($weekly_stats ?? ['upcoming' => 0, 'completed' => 0, 'past_due' => 0]); ?>;
     const upcomingCount = parseInt(weeklyStats.upcoming, 10);
     const completedCount = parseInt(weeklyStats.completed, 10);
     const pastDueCount = parseInt(weeklyStats.past_due, 10);
     const totalCount = upcomingCount + completedCount + pastDueCount;
 
-    const data = {
+    const donutData = {
         labels: ['Upcoming', 'Completed', 'Past Due'],
         datasets: [{
             data: [upcomingCount, completedCount, pastDueCount],
@@ -315,11 +325,10 @@ $(document).ready(function() {
         }
     };
 
-    const ctx = document.getElementById('studentWeekChart').getContext('2d');
-    // Always render chart, even if empty (looks better than text)
-    new Chart(ctx, {
+    const ctxDonut = document.getElementById('studentWeekChart').getContext('2d');
+    new Chart(ctxDonut, {
         type: 'doughnut',
-        data: data,
+        data: donutData,
         plugins: [centerTextPlugin],
         options: {
             responsive: true,
@@ -327,13 +336,55 @@ $(document).ready(function() {
             cutout: '75%',
             plugins: {
                 centerText: { display: true },
-                legend: { 
-                    position: 'right', 
-                    align: 'center',
-                    labels: { usePointStyle: true, padding: 15, font: { family: 'Inter', size: 11 } } 
-                }
+                legend: { position: 'right', align: 'center', labels: { usePointStyle: true, padding: 15, font: { family: 'Inter', size: 11 } } }
             }
         }
     });
+
+    // --- GRADES OVERVIEW CHART (BAR) ---
+    const gradeData = <?php echo json_encode($grades_overview ?? []); ?>;
+    
+    if (gradeData.length > 0) {
+        const gradeLabels = gradeData.map(item => item.course);
+        const gradeValues = gradeData.map(item => item.grade);
+        const barColors = gradeValues.map(grade => grade >= 75 ? '#10b981' : '#f59e0b'); // Green if >= 75
+
+        const ctxBar = document.getElementById('gradesBarChart').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: gradeLabels,
+                datasets: [{
+                    label: 'Current Grade (%)',
+                    data: gradeValues,
+                    backgroundColor: barColors,
+                    borderRadius: 6,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function(context) { return context.raw + '%'; } } }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { borderDash: [5, 5], color: '#f1f5f9' },
+                        ticks: { font: { family: 'Inter' }, callback: function(value) { return value + '%' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Inter', size: 11 }, autoSkip: false, maxRotation: 45, minRotation: 0 }
+                    }
+                }
+            }
+        });
+    } else {
+         $('#gradesBarChart').parent().html('<div class="flex flex-col items-center justify-center h-full text-neutral-400"><i class="fas fa-chart-bar text-4xl mb-2 opacity-50"></i><p class="text-sm">No grade data available yet</p></div>');
+    }
 });
 </script>

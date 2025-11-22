@@ -491,18 +491,39 @@ class AdminController extends Controller {
     /**
      * Show the new General Reports page.
      */
+    /**
+     * Show the new Analytical Reports page.
+     */
+    /**
+     * Show the new Analytical Reports page.
+     */
     public function general_reports() {
-        $data['page_title'] = 'General Reports';
+        // 1. Get the selected Range (Default to 'all')
+        $range = $this->io->get('range') ?? 'all'; // Use LavaLust input handler if available, or $_GET
+        
+        // 2. Get Filtered Counts (KPIs)
+        $data['stats'] = [
+            'users'       => $this->User_Model->count_users_by_date($range),
+            'courses'     => $this->Course_Model->count_courses_by_date($range),
+            'submissions' => $this->Assignment_Submission_Model->count_submissions_by_date($range),
+            'assignments' => $this->Assignment_Model->count_all_assignments() 
+        ];
 
-        // 1. Get site-wide totals
-        $data['total_assignments'] = $this->Assignment_Model->count_all_assignments();
-        $data['total_submissions'] = $this->Assignment_Submission_Model->count_all_submissions();
-        $data['total_enrollments'] = $this->Enrollment_Model->count_all_enrollments('approved');
-        $data['total_courses'] = $this->Course_Model->count_all_courses();
+        // 3. Get Insights (Leaderboards)
+        $data['top_students'] = $this->Assignment_Submission_Model->get_top_students_system_wide(5);
+        $data['top_courses'] = $this->Assignment_Submission_Model->get_course_performance_ranking(5);
 
-        // 2. Get master lists
+        // 4. Get Chart Data (Trends)
+        $data['submission_trends'] = $this->Assignment_Submission_Model->get_submission_trends();
+        $data['registration_trends'] = $this->User_Model->get_registration_trends();
+
+        // 5. --- THIS WAS MISSING: Get Master Lists ---
         $data['master_course_list'] = $this->Course_Model->get_all_courses_with_teacher();
-        $data['master_user_list'] = $this->User_Model->get_all_users(); // Re-use existing method
+        $data['master_user_list'] = $this->User_Model->get_all_users();
+        // ---------------------------------------------
+
+        $data['page_title'] = 'Analytics & Reports';
+        $data['selected_range'] = $range;
 
         $this->call->view('/admin/general_reports', $data);
     }
@@ -605,6 +626,39 @@ class AdminController extends Controller {
         }
         redirect('/admin/users');
     }
+
+    /**
+     * Generate a printer-friendly report of users.
+     * Can be filtered by role (e.g., 'student', 'teacher', 'all').
+     */
+    public function print_users_report($role = 'all') {
+        // 1. Filter Users based on selection
+        if ($role === 'all') {
+            $data['users'] = $this->User_Model->filter([])
+                                            ->order_by('role', 'ASC')
+                                            ->order_by('last_name', 'ASC')
+                                            ->get_all();
+            $data['report_title'] = 'Master User Registry';
+        } else {
+            // Valid roles: student, teacher, admin
+            $data['users'] = $this->User_Model->filter(['role' => $role])
+                                            ->order_by('last_name', 'ASC')
+                                            ->get_all();
+            $data['report_title'] = ucfirst($role) . ' Registry Report';
+        }
+        
+        // 2. Get grades (only needed if we are showing students)
+        if ($role === 'all' || $role === 'student') {
+            $data['student_grades'] = $this->Assignment_Submission_Model->get_all_student_averages();
+        } else {
+            $data['student_grades'] = [];
+        }
+        
+        // 3. Load the print view
+        $this->call->view('/admin/reports/print_users', $data);
+    }
+
+    
     
 }
 ?>
