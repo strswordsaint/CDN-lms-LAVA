@@ -17,14 +17,28 @@
 
 <div class="max-w-2xl mx-auto mt-8 mb-8 bg-white p-6 md:p-8 rounded-lg shadow-lg border border-gray-200">
     <?php
-        // Set the correct back URL based on user role
-        $back_url = ($user_role == 'admin') 
-            ? site_url('/admin/courses') 
-            : site_url('/courses');
+        // Default fallback
+        $back_url = site_url('/courses'); 
+        $back_text = 'Back to Course List';
+
+        // If course data exists, set specific back links
+        if (!empty($course)) {
+            if ($user_role == 'admin') {
+                $back_url = site_url('/admin/courses');
+                $back_text = 'Back to All Courses';
+            } else {
+                // Teacher: Go back to the specific course page
+                $back_url = site_url('/courses/show/' . $course['course_id']);
+                $back_text = 'Back to Course';
+            }
+        }
     ?>
-    <a href="<?php echo $back_url; ?>" class="text-sm text-primary-600 hover:underline mb-4 inline-block">
-        <i class="fas fa-arrow-left mr-1"></i> 
-        <?php echo ($user_role == 'admin') ? 'Back to All Courses' : 'Back to Course List'; ?>
+    
+    <a href="<?php echo $back_url; ?>" class="inline-flex items-center text-sm font-semibold text-neutral-500 hover:text-primary-600 mb-3 transition-colors">
+        <div class="w-6 h-6 rounded-full bg-white border border-neutral-200 flex items-center justify-center mr-2 shadow-sm">
+            <i class="fas fa-arrow-left text-xs"></i>
+        </div>
+        <?php echo $back_text; ?>
     </a>
     
     <h2 class="text-2xl font-bold text-center text-neutral-900 mb-6"><?php echo $page_title ?? 'Edit Course'; ?></h2>

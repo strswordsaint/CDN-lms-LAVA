@@ -111,5 +111,40 @@ class Assignment_Submission_Model extends Model {
         $result = $this->db->raw($sql)->fetch(PDO::FETCH_ASSOC);
         return $result['total'] ?? 0;
     }
+
+    /**
+     * NEW: Get submission counts for the last 7 days to populate chart.
+     */
+    public function get_submission_activity_7days($teacher_id) {
+        $sql = "
+            SELECT DATE(s.submitted_at) as activity_date, COUNT(*) as submission_count
+            FROM {$this->table} s
+            JOIN assignments a ON s.assignment_id = a.assignment_id
+            JOIN courses c ON a.course_id = c.course_id
+            WHERE c.teacher_id = ?
+            AND s.submitted_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+            GROUP BY DATE(s.submitted_at)
+            ORDER BY activity_date ASC
+        ";
+        return $this->db->raw($sql, [$teacher_id])->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * NEW: Get top assignments that need grading.
+     */
+    public function get_priority_grading_list($teacher_id, $limit = 3) {
+        $sql = "
+            SELECT a.title, c.title as course_title, COUNT(s.submission_id) as ungraded_count, a.assignment_id
+            FROM assignment_submissions s
+            JOIN assignments a ON s.assignment_id = a.assignment_id
+            JOIN courses c ON a.course_id = c.course_id
+            WHERE c.teacher_id = ?
+            AND s.grade IS NULL
+            GROUP BY a.assignment_id
+            ORDER BY ungraded_count DESC
+            LIMIT ?
+        ";
+        return $this->db->raw($sql, [$teacher_id, $limit])->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
 ?>

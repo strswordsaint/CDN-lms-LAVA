@@ -2,180 +2,409 @@
 <?php include 'app/views/layouts/header.php'; ?>
 
 <style>
-    /* === Styles for Tabs === */
-    .tab-link {
-        padding: 0.5rem 1rem;
-        font-weight: 600;
-        color: #64748b;
-        border-bottom: 2px solid transparent;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
+    /* === Modern Variables & Reset === */
+    :root {
+        --bg-body: #eef2f6; 
+        --primary-soft: #eff6ff;
+        --primary-border: #bfdbfe;
+        --primary-text: #1d4ed8;
     }
-    .tab-link.active {
-        color: #1d4ed8;
-        border-bottom-color: #1d4ed8;
-    }
-    .tab-panel {
-        display: none;
-    }
-    .tab-panel.active {
-        display: block;
+    
+    body {
+        background-color: var(--bg-body);
+        font-family: 'Inter', sans-serif;
     }
 
-    /* === Styles for Stream Posts === */
-    .post-card {
-        @apply card flex space-x-4 p-5;
+    /* === DESIGNED BANNER === */
+    .course-banner {
+        background: white;
+        position: relative;
+        overflow: hidden;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 2.5rem 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
     }
-    .post-icon {
-        @apply flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-white;
+    
+    /* Decorative Background Elements */
+    .banner-decoration {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.6;
+        z-index: 0;
     }
-    .post-content {
-        @apply flex-1;
+    .decoration-1 { top: -60%; left: -10%; width: 500px; height: 500px; background: #dbeafe; }
+    .decoration-2 { bottom: -60%; right: -5%; width: 400px; height: 400px; background: #e0e7ff; }
+
+    .banner-content {
+        position: relative;
+        z-index: 10;
     }
-    .post-title {
-        @apply text-lg font-semibold text-neutral-900;
+
+    /* === STICKY NAVIGATION === */
+    .sticky-tabs-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #cbd5e1;
+        padding: 0.75rem 0;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
-    .post-title a:hover {
-        @apply underline;
+
+    .nav-pills {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding: 0.25rem;
     }
-    .post-meta {
-        @apply text-xs text-neutral-500 mt-1;
+
+    .tab-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1.25rem;
+        border-radius: 999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #64748b;
+        background: transparent;
+        border: 1px solid transparent;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
     }
-    .post-description {
-        @apply text-sm text-neutral-700 mt-3;
+
+    .tab-pill:hover {
+        background-color: #e2e8f0;
+        color: #1e293b;
     }
-    .post-attachments {
-        list-style: none;
-        padding-left: 0;
+
+    .tab-pill.active {
+        background-color: #2563eb; /* Primary Blue */
+        color: white;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        border-color: #2563eb;
+    }
+
+    /* === HUNTJOBS CARD STYLE === */
+    .hunt-card {
+        background: white;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04); 
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        gap: 1.25rem;
+        align-items: flex-start;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hunt-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.15); 
+    }
+
+    /* Accent Bar Logic handled via PHP inline style/class */
+    .accent-bar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+    }
+
+    .hunt-icon-box {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+        box-shadow: inset 0 2px 4px rgba(255,255,255,0.3);
+    }
+
+    .meta-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    /* === RICH CONTENT AREA === */
+    .post-content-area {
+        margin-top: 1rem;
+        color: #334155;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+    .post-content-area iframe, 
+    .post-content-area video {
+        max-width: 100%;
+        border-radius: 0.75rem;
         margin-top: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .post-content-area img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.75rem;
+        margin-top: 0.5rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* === ATTACHMENT FILE CARDS === */
+    .attachment-grid {
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px dashed #e2e8f0;
     }
-    .post-attachment-item {
-        font-size: 0.875rem;
-        background-color: #f1f5f9;
+    
+    .file-card {
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 0.375rem;
-        padding: 0.25rem 0.75rem;
-    }
-    .post-attachment-item a {
-        color: #1d4ed8;
-        font-weight: 500;
+        border-radius: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        transition: all 0.2s;
         text-decoration: none;
+        max-width: 100%;
     }
-    .post-attachment-item a:hover {
-        text-decoration: underline;
+    
+    .file-card:hover {
+        background: white;
+        border-color: #93c5fd;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        transform: translateY(-1px);
     }
-    .post-attachment-item i {
-        color: #64748b;
-        margin-right: 0.375rem;
+    
+    .file-icon {
+        width: 2rem;
+        height: 2rem;
+        background: #e0f2fe;
+        color: #0284c7;
+        border-radius: 0.375rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        font-size: 0.875rem;
     }
-    .post-footer {
-        @apply mt-4 pt-3 border-t border-neutral-200 flex justify-end items-center;
+    
+    .file-info { display: flex; flex-direction: column; }
+    .file-name { font-size: 0.8rem; font-weight: 600; color: #334155; }
+    .file-action { font-size: 0.7rem; color: #64748b; }
+
+    /* === FOCUS RINGS === */
+    input:focus, textarea:focus, button:focus, .btn:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+        border-color: #3b82f6;
+        transition: all 0.2s;
     }
-    .btn-replies {
-        @apply btn btn-secondary text-sm;
+
+    .tab-panel { display: none; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .tab-panel.active { display: block; }
+    
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 
-<div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <a href="<?php echo site_url('/courses/my'); ?>" class="text-sm text-primary-600 hover:underline mb-4 inline-block">
-        <i class="fas fa-arrow-left mr-1"></i> Back to My Courses
-    </a>
+<div class="course-banner">
+    <div class="banner-decoration decoration-1"></div>
+    <div class="banner-decoration decoration-2"></div>
+    
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 banner-content">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            
+            <div class="flex-1 min-w-0">
+                <a href="<?php echo site_url('/courses/my'); ?>" class="inline-flex items-center text-sm font-semibold text-neutral-500 hover:text-primary-600 mb-3 transition-colors">
+                    <div class="w-6 h-6 rounded-full bg-white border border-neutral-200 flex items-center justify-center mr-2 shadow-sm">
+                        <i class="fas fa-arrow-left text-xs"></i>
+                    </div>
+                    Back to My Courses
+                </a>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight">
+                    <?php echo htmlspecialchars($course['title']); ?>
+                </h1>
+                <div class="mt-2 text-neutral-500 max-w-2xl text-sm line-clamp-2">
+                    <?php echo nl2br(htmlspecialchars($course['description'])); ?>
+                </div>
+            </div>
 
-    <div class="card p-6 mb-6">
-        <h1 class="text-3xl font-bold text-neutral-900 mb-2"><?php echo htmlspecialchars($course['title']); ?></h1>
-        <p class="text-sm text-neutral-600"><?php echo nl2br(htmlspecialchars($course['description'])); ?></p>
+            <div class="flex flex-col items-end gap-2">
+                <div class="bg-white/80 backdrop-blur border border-neutral-200 shadow-sm rounded-xl px-5 py-3 text-right">
+                    <div class="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-0.5">Enrollment Code</div>
+                    <div class="text-xl font-mono font-bold text-primary-700 select-all">
+                        <?php echo htmlspecialchars($course['enrollment_code'] ?? $course['course_id']); ?>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
+</div>
 
-    <div class="border-b border-neutral-300 mb-6">
-        <nav class="flex -mb-px">
-            <a class="tab-link active" data-tab="announcements">Announcements</a>
-            <a class="tab-link" data-tab="activities">Activities</a>
-            <a class="tab-link" data-tab="assignments">Assignments</a>
-            <a class="tab-link" data-tab="materials">Materials</a>
+<div class="sticky-tabs-wrapper">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="nav-pills">
+            <button class="tab-pill active" data-tab="announcements">
+                <i class="fas fa-bullhorn mr-2"></i> Stream
+            </button>
+            <button class="tab-pill" data-tab="activities">
+                <i class="fas fa-gamepad mr-2"></i> Activities
+            </button>
+            <button class="tab-pill" data-tab="assignments">
+                <i class="fas fa-tasks mr-2"></i> Assignments
+            </button>
+            <button class="tab-pill" data-tab="materials">
+                <i class="fas fa-folder-open mr-2"></i> Materials
+            </button>
         </nav>
     </div>
-    
-    <div>
+</div>
+
+<div class="container mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div class="max-w-5xl mx-auto">
         
         <div id="tab-panel-announcements" class="tab-panel active">
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <?php if (empty($announcements)): ?>
-                     <p class="text-neutral-500 p-6 text-center card">No announcements, activities, or assignments have been posted yet.</p>
+                     <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-neutral-200">
+                        <div class="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-3 text-neutral-400">
+                            <i class="far fa-comment-dots text-3xl"></i>
+                        </div>
+                        <h3 class="text-neutral-900 font-semibold">It's quiet here</h3>
+                        <p class="text-neutral-500 text-sm">No announcements posted yet.</p>
+                    </div>
                 <?php else: ?>
                     <?php foreach ($announcements as $post): ?>
-                        <div class="post-card">
-                            <?php if ($post['type'] == 'assignment'): ?>
-                                <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
-                            <?php elseif ($post['type'] == 'activity'): ?>
-                                <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
-                            <?php elseif ($post['type'] == 'quiz'): ?>
-                                <div class="post-icon bg-purple-600"><i class="fas fa-puzzle-piece fa-lg"></i></div>
-                            <?php else: ?>
-                                <div class="post-icon bg-neutral-500"><i class="fas fa-bullhorn fa-lg"></i></div>
-                            <?php endif; ?>
+                        <?php 
+                            // Determine Type & Colors
+                            $isAssignment = $post['type'] == 'assignment';
+                            $isActivity = $post['type'] == 'activity';
+                            $isQuiz = $post['type'] == 'quiz';
                             
-                            <div class="post-content">
-                                <div>
-                                    <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
-                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
-                                    <?php elseif ($post['type'] == 'quiz'): ?>
-                                        <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
-                                    <?php else: ?>
-                                        <span class="post-title"><?php echo htmlspecialchars($post['title']); ?></span>
-                                    <?php endif; ?>
+                            $bgClass = 'bg-neutral-100 text-neutral-500';
+                            $icon = 'fa-bullhorn';
+                            $accentColor = 'bg-neutral-400';
+                            $hoverBorder = 'border-neutral-300';
+                            
+                            if ($isAssignment) { 
+                                $bgClass = 'bg-blue-50 text-blue-600 border-blue-200'; 
+                                $icon = 'fa-clipboard-list'; 
+                                $accentColor = 'bg-blue-500';
+                                $hoverBorder = 'border-blue-300';
+                            }
+                            elseif ($isActivity) { 
+                                $bgClass = 'bg-amber-50 text-amber-600 border-amber-200'; 
+                                $icon = 'fa-gamepad'; 
+                                $accentColor = 'bg-amber-500';
+                                $hoverBorder = 'border-amber-300';
+                            }
+                            elseif ($isQuiz) { 
+                                $bgClass = 'bg-purple-50 text-purple-600 border-purple-200'; 
+                                $icon = 'fa-puzzle-piece'; 
+                                $accentColor = 'bg-purple-500';
+                                $hoverBorder = 'border-purple-300';
+                            }
+                        ?>
+                        
+                        <div class="hunt-card group hover:<?php echo $hoverBorder; ?>">
+                            <div class="accent-bar <?php echo $accentColor; ?>"></div>
 
-                                    <div class="post-meta">
-                                        <?php if ($post['type'] == 'assignment' || $post['type'] == 'activity' || $post['type'] == 'quiz'): ?>
-                                            Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
-                                            <span class="mx-1">&bull;</span>
-                                            <?php echo htmlspecialchars($post['points']); ?> pts
+                            <div class="hunt-icon-box <?php echo $bgClass; ?> border">
+                                <i class="fas <?php echo $icon; ?>"></i>
+                            </div>
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-col md:flex-row justify-between md:items-start gap-4">
+                                    <div>
+                                        <?php if ($isAssignment || $isActivity || $isQuiz): ?>
+                                            <a href="<?php echo site_url(($isQuiz ? '/quiz/' : '/assignment/') . $post['assignment_id']); ?>" class="text-xl font-bold text-neutral-900 group-hover:text-primary-700 transition-colors block mb-1">
+                                                <?php echo htmlspecialchars($post['title']); ?>
+                                            </a>
                                         <?php else: ?>
-                                            Posted on <?php echo date('M d, Y', strtotime($post['created_at'])); ?>
+                                            <h3 class="text-xl font-bold text-neutral-900 mb-1"><?php echo htmlspecialchars($post['title']); ?></h3>
                                         <?php endif; ?>
+
+                                        <div class="flex flex-wrap items-center gap-3 text-sm">
+                                            <span class="meta-badge bg-neutral-100 text-neutral-600 border border-neutral-200">
+                                                <?php echo ucfirst($post['type']); ?>
+                                            </span>
+                                            
+                                            <?php if ($isAssignment || $isActivity || $isQuiz): ?>
+                                                <span class="text-neutral-300">&bull;</span>
+                                                <span class="flex items-center text-neutral-500 font-medium">
+                                                    <i class="far fa-clock mr-1.5"></i> Due: <?php echo date('M d, g:i A', strtotime($post['due_date'])); ?>
+                                                </span>
+                                                <span class="flex items-center font-semibold text-neutral-700 bg-neutral-50 px-2 py-0.5 rounded border border-neutral-100">
+                                                    <?php echo htmlspecialchars($post['points']); ?> pts
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-neutral-400">Posted on <?php echo date('M d, Y', strtotime($post['created_at'])); ?></span>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
+
+                                    <?php if ($isAssignment || $isActivity || $isQuiz): ?>
+                                        <div class="flex-shrink-0 mt-2 md:mt-0">
+                                            <?php if (!empty($post['submission_id'])): ?>
+                                                <a href="<?php echo site_url(($isQuiz ? '/quiz/' : '/assignment/') . $post['assignment_id'] . ($isQuiz ? '/results' : '')); ?>" class="btn btn-primary rounded-lg px-4 py-2 shadow-sm text-sm">
+                                                    <?php echo $isQuiz ? 'View Results' : 'View Submission'; ?>
+                                                </a>
+                                            <?php else: ?>
+                                                <a href="<?php echo site_url(($isQuiz ? '/quiz/' : '/assignment/') . $post['assignment_id']); ?>" class="btn btn-success rounded-lg px-4 py-2 shadow-sm text-sm">
+                                                    <?php echo $isQuiz ? 'Take Quiz' : 'Submit Work'; ?>
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
+
                                 <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
+                                    <div class="post-content-area">
+                                        <?php echo $post['description']; ?>
+                                    </div>
                                 <?php endif; ?>
+
                                 <?php if (!empty($post['attachments'])): ?>
-                                    <ul class="post-attachments">
+                                    <div class="attachment-grid">
                                         <?php foreach ($post['attachments'] as $file): ?>
-                                            <li class="post-attachment-item">
-                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
-                                            </li>
+                                            <a href="<?php echo base_url() . $file['file_path']; ?>" download class="file-card">
+                                                <div class="file-icon">
+                                                    <i class="fas fa-file-alt"></i>
+                                                </div>
+                                                <div class="file-info">
+                                                    <span class="file-name"><?php echo htmlspecialchars($file['file_name']); ?></span>
+                                                    <span class="file-action">Download</span>
+                                                </div>
+                                            </a>
                                         <?php endforeach; ?>
-                                    </ul>
+                                    </div>
                                 <?php endif; ?>
                                 
-                                <div class="post-footer">
-                                    <?php if ($post['type'] == 'quiz'): ?>
-                                        <?php if (!empty($post['submission_id'])): ?>
-                                            <div class="flex items-center mr-4">
-                                                <span class="text-success-700 font-bold mr-2">
-                                                    <i class="fas fa-check-circle"></i> 
-                                                    Score: <?php echo floatval($post['grade']); ?> / <?php echo floatval($post['points']); ?>
-                                                </span>
-                                                <a href="<?php echo site_url('/quiz/' . $post['assignment_id'] . '/results'); ?>" class="text-sm text-blue-600 hover:underline">
-                                                    View Details
-                                                </a>
-                                            </div>
-                                        <?php else: ?>
-                                            <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="btn btn-success mr-2">
-                                                <i class="fas fa-clock mr-1"></i> Take Quiz
-                                            </a>
-                                        <?php endif; ?>
-                                    <?php elseif ($post['type'] == 'assignment' || $post['type'] == 'activity'): ?>
-                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
-                                            <?php echo !empty($post['submission_id']) ? 'View Submission' : 'Submit Work'; ?>
-                                        </a>
-                                    <?php endif; ?>
-
-                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
-                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
+                                <div class="mt-4 pt-3 border-t border-neutral-100 flex justify-end">
+                                    <button type="button" class="btn-replies text-neutral-500 hover:text-primary-600 text-sm font-medium flex items-center transition-colors" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
+                                        <i class="far fa-comment-dots mr-2 text-lg"></i> 
+                                        <?php echo $post['reply_count'] > 0 ? $post['reply_count'] . ' Comments' : 'Comment'; ?>
                                     </button>
                                 </div>
                             </div>
@@ -186,161 +415,61 @@
         </div>
         
         <div id="tab-panel-activities" class="tab-panel">
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <?php if (empty($activities)): ?>
-                    <p class="text-neutral-500 p-6 text-center card">No activities have been posted yet.</p>
+                    <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-neutral-200 text-neutral-400">No activities posted yet.</div>
                 <?php else: ?>
                     <?php foreach ($activities as $post): ?>
-                        <div class="post-card">
-                            <div class="post-icon bg-yellow-500"><i class="fas fa-gamepad fa-lg"></i></div>
-                            <div class="post-content">
-                                <div>
-                                    <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
-                                    <div class="post-meta">
-                                        Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
-                                        <span class="mx-1">&bull;</span>
-                                        <?php echo htmlspecialchars($post['points']); ?> pts
-                                    </div>
-                                </div>
-                                <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
-                                <?php endif; ?>
-                                <?php if (!empty($post['attachments'])): ?>
-                                    <ul class="post-attachments">
-                                        <?php foreach ($post['attachments'] as $file): ?>
-                                            <li class="post-attachment-item">
-                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php endif; ?>
-                                
-                                <div class="post-footer">
-                                    <?php if ($post['type'] == 'quiz'): ?>
-                                        <?php if (!empty($post['submission_id'])): ?>
-                                            <div class="flex items-center mr-4">
-                                                <span class="text-success-700 font-bold mr-2">
-                                                    <i class="fas fa-check-circle"></i> 
-                                                    Score: <?php echo floatval($post['grade']); ?> / <?php echo floatval($post['points']); ?>
-                                                </span>
-                                                <a href="<?php echo site_url('/quiz/' . $post['assignment_id'] . '/results'); ?>" class="text-sm text-blue-600 hover:underline">
-                                                    View Details
-                                                </a>
-                                            </div>
-                                        <?php else: ?>
-                                            <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="btn btn-success mr-2">
-                                                <i class="fas fa-clock mr-1"></i> Take Quiz
-                                            </a>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
-                                            <?php echo !empty($post['submission_id']) ? 'View Submission' : 'Submit Work'; ?>
-                                        </a>
-                                    <?php endif; ?>
-
-                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
-                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <?php 
+                            $assignment = $post; // Map variable for include
+                            include 'app/views/student/all_activity_item.php'; 
+                        ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
         </div>
         
         <div id="tab-panel-assignments" class="tab-panel">
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <?php if (empty($assignments)): ?>
-                    <p class="text-neutral-500 p-6 text-center card">No formal assignments have been posted yet.</p>
+                    <div class="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-neutral-200 text-neutral-400">No assignments posted yet.</div>
                 <?php else: ?>
                     <?php foreach ($assignments as $post): ?>
-                        <div class="post-card">
-                            <?php if($post['type'] == 'quiz'): ?>
-                                <div class="post-icon bg-purple-600"><i class="fas fa-puzzle-piece fa-lg"></i></div>
-                            <?php else: ?>
-                                <div class="post-icon bg-primary-600"><i class="fas fa-tasks fa-lg"></i></div>
-                            <?php endif; ?>
-
-                            <div class="post-content">
-                                <div>
-                                    <?php if ($post['type'] == 'quiz'): ?>
-                                         <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
-                                    <?php else: ?>
-                                         <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="post-title"><?php echo htmlspecialchars($post['title']); ?></a>
-                                    <?php endif; ?>
-                                    <div class="post-meta">
-                                        Due: <?php echo date('M d, Y @ g:i A', strtotime($post['due_date'])); ?>
-                                        <span class="mx-1">&bull;</span>
-                                        <?php echo htmlspecialchars($post['points']); ?> pts
-                                    </div>
-                                </div>
-                                <?php if (!empty($post['description'])): ?>
-                                    <div class="post-description prose prose-sm max-w-none"><?php echo $post['description']; ?></div>
-                                <?php endif; ?>
-                                <?php if (!empty($post['attachments'])): ?>
-                                    <ul class="post-attachments">
-                                        <?php foreach ($post['attachments'] as $file): ?>
-                                            <li class="post-attachment-item">
-                                                <a href="<?php echo base_url() . $file['file_path']; ?>" download><i class="fas fa-paperclip"></i> <?php echo htmlspecialchars($file['file_name']); ?></a>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                <?php endif; ?>
-                                
-                                <div class="post-footer">
-                                    <?php if ($post['type'] == 'quiz'): ?>
-                                        <?php if (!empty($post['submission_id'])): ?>
-                                            <div class="flex items-center mr-4">
-                                                <span class="text-success-700 font-bold mr-2">
-                                                    <i class="fas fa-check-circle"></i> 
-                                                    Score: <?php echo floatval($post['grade']); ?> / <?php echo floatval($post['points']); ?>
-                                                </span>
-                                                <a href="<?php echo site_url('/quiz/' . $post['assignment_id'] . '/results'); ?>" class="text-sm text-blue-600 hover:underline">
-                                                    View Details
-                                                </a>
-                                            </div>
-                                        <?php else: ?>
-                                            <a href="<?php echo site_url('/quiz/' . $post['assignment_id']); ?>" class="btn btn-success mr-2">
-                                                <i class="fas fa-clock mr-1"></i> Take Quiz
-                                            </a>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <a href="<?php echo site_url('/assignment/' . $post['assignment_id']); ?>" class="btn btn-primary mr-2">
-                                            <?php echo !empty($post['submission_id']) ? 'View Submission' : 'Submit Work'; ?>
-                                        </a>
-                                    <?php endif; ?>
-                                    
-                                    <button type="button" class="btn-replies" data-post-id="<?php echo $post['assignment_id']; ?>" data-post-title="<?php echo htmlspecialchars($post['title']); ?>">
-                                        <i class="fas fa-comments mr-2"></i> Replies (<?php echo $post['reply_count']; ?>)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <?php 
+                            $assignment = $post; // Map variable for include
+                            include 'app/views/student/all_assignment_item.php'; 
+                        ?>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
         </div>
 
         <div id="tab-panel-materials" class="tab-panel">
-            <div class="card">
-                <div class="p-6 border-b">
-                    <h2 class="text-xl font-semibold text-neutral-700">Course Materials</h2>
+            <div class="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
+                <div class="p-6 border-b border-neutral-100 bg-neutral-50 flex justify-between items-center">
+                    <h3 class="font-bold text-neutral-800 text-lg">Course Resources</h3>
                 </div>
-                <div class="divide-y divide-neutral-200">
+                <div class="divide-y divide-neutral-100">
                     <?php if (empty($materials)): ?>
-                        <p class="text-neutral-500 p-6 text-center">No materials have been uploaded for this course yet.</p>
+                        <div class="p-12 text-center text-neutral-400 italic">No materials uploaded yet.</div>
                     <?php else: ?>
                         <?php foreach ($materials as $material): ?>
-                            <div class="p-4 flex justify-between items-center hover:bg-neutral-50">
-                                <div class="flex items-center">
-                                    <i class="fas fa-file-alt text-neutral-500 mr-3"></i>
-                                    <a href="<?php echo base_url() . $material['file_path']; ?>" download class="text-sm font-medium text-primary-600 hover:underline">
-                                        <?php echo htmlspecialchars($material['file_name']); ?>
-                                    </a>
+                            <div class="p-5 flex justify-between items-center hover:bg-neutral-50 transition-colors group">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-neutral-100 rounded-xl flex items-center justify-center text-neutral-500 group-hover:bg-white group-hover:shadow-md transition-all">
+                                        <i class="far fa-file-alt text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <a href="<?php echo base_url() . $material['file_path']; ?>" download class="text-lg font-bold text-neutral-800 hover:text-primary-600 hover:underline block transition-colors">
+                                            <?php echo htmlspecialchars($material['file_name']); ?>
+                                        </a>
+                                        <span class="text-xs text-neutral-400 font-medium uppercase tracking-wide">
+                                            Uploaded <?php echo date('M d, Y', strtotime($material['uploaded_at'])); ?>
+                                        </span>
+                                    </div>
                                 </div>
-                                <a href="<?php echo base_url() . $material['file_path']; ?>" download class="btn btn-success btn-sm">
-                                    <i class="fas fa-download mr-1"></i> Download
+                                <a href="<?php echo base_url() . $material['file_path']; ?>" download class="btn btn-success rounded-lg px-4 py-2 shadow-sm text-sm hover:shadow-md">
+                                    <i class="fas fa-download mr-2"></i> Download
                                 </a>
                             </div>
                         <?php endforeach; ?>
@@ -371,21 +500,22 @@ $(document).ready(function() {
         savedTab = 'announcements'; // Default to announcements
     }
 
-    $('.tab-link').removeClass('active');
-    $('.tab-panel').removeClass('active');
-    $('.tab-link[data-tab="' + savedTab + '"]').addClass('active');
-    $('#tab-panel-' + savedTab).addClass('active');
-
-    $('.tab-link').on('click', function(e) {
-        e.preventDefault();
-        var tab = $(this).data('tab');
-        sessionStorage.setItem(storageKey, tab);
-        
-        $('.tab-link').removeClass('active');
-        $(this).addClass('active');
-        
+    function activateTab(tab) {
+        $('.tab-pill').removeClass('active');
         $('.tab-panel').removeClass('active');
+        
+        $('.tab-pill[data-tab="' + tab + '"]').addClass('active');
         $('#tab-panel-' + tab).addClass('active');
+        
+        sessionStorage.setItem(storageKey, tab);
+    }
+
+    activateTab(savedTab);
+
+    $('.tab-pill').on('click', function(e) {
+        e.preventDefault();
+        activateTab($(this).data('tab'));
+        $('html, body').animate({ scrollTop: 0 }, 300);
     });
 });
 </script>
